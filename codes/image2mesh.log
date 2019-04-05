@@ -1,0 +1,184 @@
+-- FreeFem++ v  4.000000 (date lun. 21 janv. 2019 10:10:16)
+ Load: lg_fem lg_mesh lg_mesh3 eigenvalue 
+    1 : load "ppm2rnm"(load: loadLibary C:\Program Files (x86)\FreeFem++\\.\pâ(pm2rnm = 0) lood: init ppm2rmn
+ load "isoline"(load: loadLibary C:\Program Files (x86)\FreeFem++\\.\isoline = 0) load "medit"(load: loadLibary C:\Progrâ(am Files (x86)\FreeFem++\\.\medit = 0)
+    2 : string image = "../images/image.pgm";
+    3 : // 580 -> 604 (=24) and 2323 -> 2335 (=12)
+    4 : real AreaImage = (24 + 2 * 0.2) * (12 + 2 * 0.2);
+    5 : real [int , int] Curves(3, 1);
+    6 : int [int] be(1) ;
+    7 : int nc;
+    8 : {
+    9 :         // build the curve file xy. txt ...
+   10 :         real [int, int] ff1(image) ; // read image and set to an rect . array
+   11 :         // remark (0 ,0) is the upper , left corner .
+   12 :         int nx = ff1.n , ny = ff1.m ;
+   13 :         // build a cartesain mesh such that the origne is qt the right place .
+   14 :         mesh Th = square(nx - 1, ny - 1, [(nx - 1)*x, (ny - 1)*(1 - y) ]) ;
+   15 :         // warning the numbering is of the vertices (x,y) is
+   16 :         // given by $ i = x/nx + nx* y/ny $
+   17 :         fespace Vh(Th, P1);
+   18 :         Vh f1 ;
+   19 :         f1[] = ff1 ; // transforme array in finite element function .
+   20 :         real vmax = f1[].max;
+   21 :         real vmin = f1[].min;
+   22 :         real vm = (vmin + vmax)/2;
+   23 :         verbosity = 3;
+   24 :         /*
+   25 :         Usage of isoline
+   26 :         the named parameter :
+   27 :         iso =0.25 // value of iso
+   28 :         close =1 , // to force to have closing curve ...
+   29 :         beginend =be , // begin and end of curve
+   30 :         smoothing =.01 , // nb of smoothing process = size ^ ratio * 0.01
+   31 :         where size is the size of the curve ...
+   32 :         ratio =0.5
+   33 :         file =" filename "
+   34 :         ouptut :
+   35 :         xx , yy the array of point of the iso value
+   36 :         a closed curve number n is
+   37 :         in fortran notation the point of the curve are:
+   38 :         (xx[i],yy[i] , i = i0 , i1)
+   39 :         with : i0=be [2*n] , i1=be [2*n +1];
+   40 :         */
+   41 :         nc = isoline(Th, f1, Curves, iso = vm, close = false, beginend = be, smoothing = .005 , ratio = 0.1);
+   42 :         verbosity = 1;
+   43 : }
+   44 : int ic0 = be(0), ic1 = be(1) - 1;
+   45 : //plot([Curves (0, ic0:ic1 ), Curves (1, ic0:ic1)], wait=1);
+   46 : // end smoothing the curve ....
+   52 # real lg#i = Curves(2, be(2 * i + 1) - 1);  )  + 1) - 1, t);
+   53 : border G#i(t = 0, 1){
+   54 :         P = Curve(Curves, be(2 * i), be(2 * i + 1) - 1, t);
+   55 :         label = i+1;
+   56 : }
+   57 : real lg#i = Curves(2, be(2 * i + 1) - 1); //
+   58 : GG(0)
+   48 :
+   49 :
+   50 :
+   51 :
+   52 :
+   48 : border G0(t = 0, 1){
+   49 :         P = Curve(Curves, be(2 * 0), be(2 * 0 + 1) - 1, t);
+   50 :         label = 0+1;
+   51 : }
+   52 : real lg0 = Curves(2, be(2 * 0 + 1) - 1);  GG(1)
+   48 :
+   49 :
+   50 :
+   51 :
+   52 :
+   48 : border G1(t = 0, 1){
+   49 :         P = Curve(Curves, be(2 * 1), be(2 * 1 + 1) - 1, t);
+   50 :         label = 1+1;
+   51 : }
+   52 : real lg1 = Curves(2, be(2 * 1 + 1) - 1);  //GG(2) //GG(3)// number of closing curve
+   59 : real hh = -10;
+   60 : //plot(G0(lg0/hh) + G1(lg1/hh));
+   61 :
+   62 : func bord = G0(lg0/hh);
+   63 : mesh Th = buildmesh(bord);
+   64 : //plot(Th, wait = 1);
+   65 :
+   66 : func bord1 = G1(-lg1/hh);
+   67 : mesh Th1 = buildmesh(bord1);
+   68 : //plot(Th1, wait = 1);
+   69 :
+   70 : real scale = sqrt(AreaImage / Th1.area);
+   71 : cout << "Scale: " << scale << endl;
+   72 : Th = movemesh(Th, [x * scale * 1000 + 580000 - 200, y * scale * 1000 + 2323000 - 200]);
+   73 : medit("test", Th);
+   74 : savemesh (Th ,"Th.mesh");
+   75 :
+   76 : /*
+   77 : func bord = G0(lg0/hh);//+G1(lg1/hh)+G2(lg2/hh)+G3(lg3/hh);
+   78 : //plot (bord , wait =1) ;
+   79 : mesh Th = buildmesh(bord);
+   80 : real scale = sqrt(AreaImage / Th.area);
+   81 : cout << "Scale: " << scale << endl;
+   82 : Th = movemesh(Th, [x * scale * 1000 + 580000 - 200, y * scale * 1000 + 2323000 - 200]);
+   83 : //Th = adaptmesh (Th, 9, IsMetric=1, nbvx=1e6);
+   84 : //plot (Th , wait = 1);
+   85 : medit("test", Th);
+   86 : */
+   87 : //
+   88 : /*
+   89 : fespace Vh(Th,P1);
+   90 : Vh u = 0;
+   91 : for(int i = 0; i < Th.nv; i++){
+   92 :     if(Th(i).label == 1){
+   93 :         //ux[][i]=Th(i).x;
+   94 :         //uy[][i]=Th(i).y;
+   95 :         u[][i] = 1;
+   96 :     }
+   97 : }
+   98 : mesh Sh = trunc(Th, abs(u) < 1.e-10, split = 2, label = 0);
+   99 : plot(Sh, wait = 1);
+  100 : //Sh = adaptmesh(Sh, 9, IsMetric=1, nbvx=1e6);
+  101 : Th = Th + Sh;
+  102 :
+  103 : //
+  104 :
+  105 : plot (Th , wait =1) ;
+  106 : //medit("test", Th);
+  107 : //savemesh (Th ,"Th.mesh") ;
+  108 : */ sizestack + 1024 =1992  ( 968 )
+ 
+ Loading image: ../images/image.pgm
+ size of image : 969 x 492 type =6
+  -- Square mesh : nb vertices  =476748 ,  nb triangles = 950576 ,  nb boundary edges 2918
+ -- isoline close=0 iso= 0.498047 1e-10
+    bound  isovalue :-0.498047 0.498047
+     curve 2 size = 6990 nbsmoothing = 0 5827 12817
+     curve 4 size = 5826 nbsmoothing = 0 0 5826
+  --  mesh:  Nb of Triangles =   3182, Nb of Vertices 1785
+  --  mesh:  Nb of Triangles =  10607, Nb of Vertices 5450
+Scale: 0.0252702
+version de medit ffmedit.exe -popen -filebin 1  test
+  -- Medit,  Release 3.0a (Nov. 30, 2007)
+     Copyright (c) LJLL, 1999-2007.
+     compiled:  lun. 21 janv. 2019 10:32:27 (with ff++ 4.0).
+ 
+medit with binary version of popen : mesh(es)
+mesh_name= test
+ Loading data file(s)
+End of mesh
+  Input seconds:     0.00
+ 
+ medit1()
+ 
+ Building scene(s)
+  Creating scene 1
+   Loading default options
+  Scene seconds:     0.30
+ 
+ Rendering scene(s)
+ 
+ Picking result :
+  Triangle   835 : 1756, 1763, 1755    ref : 0 [DEFAULT_MAT]
+  vertex    1756 : 604069.812500 2328855.000000 0.000000   ref 1
+  vertex    1763 : 604069.250000 2329112.750000 0.000000   ref 1
+  vertex    1755 : 603803.750000 2328860.250000 0.000000   ref 0
+ 
+ Picking result :
+  Triangle   196 : 1062, 1083, 1065    ref : 0 [DEFAULT_MAT]
+  vertex    1062 : 591386.937500 2324104.000000 0.000000   ref 0
+  vertex    1083 : 591519.062500 2323967.750000 0.000000   ref 0
+  vertex    1065 : 591550.687500 2324301.750000 0.000000   ref 0
+ 
+ Picking result :
+  Triangle  2527 : 9, 19, 10    ref : 0 [DEFAULT_MAT]
+  vertex       9 : 579990.937500 2332504.000000 0.000000   ref 1
+  vertex      19 : 580228.375000 2332735.750000 0.000000   ref 0
+  vertex      10 : 579990.812500 2332760.000000 0.000000   ref 1
+ 
+ Total running seconds:  15.79
+ Thank you for using Medit.
+  number of required edges : 0
+ write geo in Th.mesh.gmsh
+times: compile 0.531s, execution 16.697s,  mpirank:0
+ ######## We forget of deleting   -8 Nb pointer,   0Bytes  ,  mpirank 0, memory leak =0
+ CodeAlloc : nb ptr  3115,  size :396976 mpirank: 0
+Ok: Normal End
+ try getConsole D:\Study\Projects\XNM\codes\image2mesh.edp
