@@ -1,0 +1,74 @@
+mesh Th = readmesh("Th.mesh");
+//load "medit"
+//medit("a", Th);
+
+real[int, int] hz(1785, 4);
+ifstream file("ThCoZ.mesh");
+file >> hz;
+
+real[string] mapz;
+for (int i = 0; i < hz.n; i++){
+    mapz[string(hz(i, 0)) + " " + string(hz(i, 1))] = hz(i, 2);
+}
+
+func real[int] FillZ(real[int] mat){
+    for (int i = 0; i < Th.nv; i++){
+        mat(i) = mapz[string(Th(i).x) + " " + string(Th(i).y)];
+    }
+    return mat;
+}
+
+real dt = 0.1, nu = 2.67 * 1e-4, g = 9.81, rho = 1, T = 100; //nu = 2.67 * 1e-4
+real[int] taub = [0 , 0];
+func u1y = 10;//y * (4666272.0/2 - y); 
+
+fespace Xh(Th, P1);
+Xh u1, u2, v1, v2;
+Xh u1old, u2old, eta, H, HOld, phi;
+Xh z; z[] = FillZ(z[]);
+//cout << z[] << endl;
+ 
+
+macro Grad(u) [dx(u), dy(u)] //
+macro Grad1(u1, u2) [dx(u1), dy(u1), dx(u2), dy(u2)] //
+macro Grad2(u1, u2) [[dx(u1), dy(u1)], [dx(u2), dy(u2)]] //
+macro Div(u1, u2) (dx(u1) + dy(u2)) //
+
+//declare NS problem
+problem NavierStokes(u1, u2, v1, v2, solver = Crout) = 
+    int2d(Th)((u1 * v1 + u2 * v2) / dt)
+    - int2d(Th)(
+        convect([u1old, u2old], -dt, u1old) * v1 / dt + 
+        convect([u1old, u2old], -dt, u2old) * v2 / dt
+    )
+    + int2d(Th)(g * Grad(eta)' * [v1, v2])
+    - int2d(Th)(nu / H * Grad(H)' * Grad2(u1, u2) * [v1, v2] - nu * Grad1(u1, u2)' * Grad1(v1, v2))
+    + int2d(Th)(1.0 / (rho * H) * (taub(0) * v1 + taub(1) * v2))
+    + on(2, u1 = u1y, u2 = 0) + on(1, u1 = 0, u2 = 0);
+
+
+problem TransportEquation(H, phi) = 
+    int2d(Th)(H * phi / dt) - int2d(Th)(HOld * phi / dt) +
+    int2d(Th)(Grad(H)' * [u1, u2] * phi + H * Div(u1, u2) * phi)
+    + on(2, H = 1);
+
+
+//initial
+HOld = 1;
+
+ofstream writefile("velocity.txt");
+for(real t = dt; t < T; t += dt){
+    cout << "t: " << t << endl;
+    TransportEquation;
+    eta = H;
+    NavierStokes;
+    u1old = u1; u2old = u2;
+    HOld = H;
+    plot([u1, u2], value = 0);
+    for (int i = 0; i < Th.nv; i++){
+        if (Th(i).label == 3){
+            writefile << Th(i).x << " " << Th(i).y << " " << Th(i).label << " " << u1[](i) << " " << u2[](i) << endl; 
+        }
+    }
+    writefile << endl;
+}
