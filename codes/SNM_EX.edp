@@ -1,10 +1,21 @@
-mesh Th = readmesh("Th.mesh");
-//load "medit"
-//medit("a", Th);
+load "medit"
 
-real[int, int] hz(1785, 4);
-ifstream file("ThCoZ.mesh");
-file >> hz;
+// load mesh
+string path = "mesh/";
+string filemesh = "Th2";
+mesh Th = readmesh(path + filemesh + ".msh");
+
+int NoVMesh; // Number of Vertices Mesh
+if (filemesh == "Th1")
+    NoVMesh = 503;
+else if (filemesh == "Th2")
+    NoVMesh = 1787;
+else
+    NoVMesh = 6724;
+
+real[int, int] hz(NoVMesh, 4);
+ifstream filemeshZ(path + filemesh + "CoZ.mesh");
+filemeshZ >> hz;
 
 real[string] mapz;
 for (int i = 0; i < hz.n; i++){
@@ -18,13 +29,43 @@ func real[int] FillZ(real[int] mat){
     return mat;
 }
 
-real dt = 0.1, nu = 2.67 * 1e-4, g = 9.81, rho = 1, T = 100; //nu = 2.67 * 1e-4
+// load data
+real[int, int] data(503, 3);
+ifstream filedata("mesh/data.txt");
+filedata >> data;
+//cout << data << endl;
+
+func real[int] InterpolationData(real t){
+    // t: time (unit: second)
+    real T = 3600;
+    int n = t /  T;
+    real delt = t - n * T;
+    real[int] res(3);
+    res(0) = data(n, 0) * delt + data(n + 1, 0) * (T - delt);
+    res(1) = data(n, 1) * delt + data(n + 1, 1) * (T - delt);
+    res(2) = data(n, 2) * delt + data(n + 1, 2) * (T - delt);
+    return res; 
+}
+
+func real FuncOfH(real h){
+    return 1;
+    //return h;
+}
+
+func real FindParameterK(real Q, real[int] &h, real[int] &l){
+    real sumup = 0;
+    for (int i = 0; i < h.n; i++){
+        sumup += FuncOfH(h(i)) * h(i) * l(i);
+    }
+    return Q / sumup;
+}
+
+real dt = 0.1, nu = 2.67 * 1e-4, g = 9.81, rho = 1, T = 9999999; //nu = 2.67 * 1e-4
 real[int] taub = [0 , 0];
-func u1y = 10;//y * (4666272.0/2 - y); 
 
 fespace Xh(Th, P1);
 Xh u1, u2, v1, v2;
-Xh u1old, u2old, eta, H, HOld, phi;
+Xh u1old = 0.5, u2old = 0.5, eta = 9, H, phi;
 Xh z; z[] = FillZ(z[]);
 //cout << z[] << endl;
  
@@ -35,6 +76,7 @@ macro Grad2(u1, u2) [[dx(u1), dy(u1)], [dx(u2), dy(u2)]] //
 macro Div(u1, u2) (dx(u1) + dy(u2)) //
 
 //declare NS problem
+Xh u1y = 0;
 problem NavierStokes(u1, u2, v1, v2, solver = Crout) = 
     int2d(Th)((u1 * v1 + u2 * v2) / dt)
     - int2d(Th)(
@@ -46,29 +88,87 @@ problem NavierStokes(u1, u2, v1, v2, solver = Crout) =
     + int2d(Th)(1.0 / (rho * H) * (taub(0) * v1 + taub(1) * v2))
     + on(2, u1 = u1y, u2 = 0) + on(1, u1 = 0, u2 = 0);
 
-
+Xh HOld;
+HOld = 9 - z;
+real H3 = 0, H4 = 0;
 problem TransportEquation(H, phi) = 
     int2d(Th)(H * phi / dt) - int2d(Th)(HOld * phi / dt) +
     int2d(Th)(Grad(H)' * [u1, u2] * phi + H * Div(u1, u2) * phi)
-    + on(2, H = 1);
+    + on(2, H = HOld) + on(1, H = 0) + on(3, H = H3) + on(4, H = H4);
 
 
 //initial
-HOld = 1;
+int nbe2 = 0; // number of boundary element
+int nlabel = 2;
+for(int i = 0; i < Th.nbe; i++){
+    if(Th.be(i)[0].label == nlabel){
+        if(Th.be(i)[1].label == nlabel){
+            nbe2 += 1;
+        }
+    }
+}
 
+int[int, int] points2(nbe2, 2);
+real[int] leng2(nbe2);
+int j = 0;
+for(int i = 0; i < Th.nbe; i++){
+    if(Th.be(i)[0].label == nlabel){
+        if(Th.be(i)[1].label == nlabel){
+            leng2(j) = sqrt((Th.be(i)[0].x - Th.be(i)[1].x)^2 + (Th.be(i)[0].y - Th.be(i)[1].y)^2);
+            points2(j, 0) = Th.be(i)[0];
+            points2(j, 1) = Th.be(i)[1];
+            j += 1;
+        }
+    }
+}
+
+//cout << nbe2 << endl;
+//cout << points2 << endl;
+//cout << leng2 << endl;
+//cout << Th.hmax << endl;
+
+real[int] h(nbe2);
+int ii = 0;
 ofstream writefile("velocity.txt");
 for(real t = dt; t < T; t += dt){
     cout << "t: " << t << endl;
+    real[int] QHH = InterpolationData(t);
+    H3 = QHH(1);
+    H4 = QHH(2);
+    Xh uOnBoundary2 = 0;
     TransportEquation;
-    eta = H;
+    
+    // h_i = (H_i + H_i+1)/2....here
+    for(int i = 0; i < nbe2; i++){
+        h(i) = (H[](points2(i, 0)) + H[](points2(i, 1))) / 2;
+    }
+
+    real k = FindParameterK(QHH(0), h, leng2);
+    //cout << "h: " << h << " k: "<< k << " Q: " << QHH(0) << endl;
+    for(int i = 0; i < h.n; i++){
+        uOnBoundary2[](points2(i, 0)) =  k * FuncOfH(h(i));
+        uOnBoundary2[](points2(i, 1)) =  k * FuncOfH(h(i));
+    } 
+    
+    eta = H + z;
+    u1y = uOnBoundary2; 
     NavierStokes;
     u1old = u1; u2old = u2;
     HOld = H;
-    plot([u1, u2], value = 0);
+    
     for (int i = 0; i < Th.nv; i++){
-        if (Th(i).label == 3){
-            writefile << Th(i).x << " " << Th(i).y << " " << Th(i).label << " " << u1[](i) << " " << u2[](i) << endl; 
+        if (Th(i).label == 2){
+            writefile << Th(i).x << " " << Th(i).y << " " << Th(i).label << " " << u1[](i) << " " << u2[](i) << " " << H[](i) << endl; 
         }
     }
     writefile << endl;
+    plot([u1, u2], value = 0);
+
+    savesol("result/Th." + string(ii) + ".sol", Th, [u1, u2]);
+	savemesh(Th, "result/Th." + string(ii)+".mesh");
+    ii += 1;
+    if (ii > 1000){
+        break;
+    }
 }
+savemesh(Th, "result/Th.mesh");

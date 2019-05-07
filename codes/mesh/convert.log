@@ -1,0 +1,15 @@
+-- FreeFem++ v  3.610001 (date jeu. 12 juil. 2018 15:05:23)
+ Load: lg_fem lg_mesh lg_mesh3 eigenvalue
+    1 : string name = "Th3";
+    2 :
+    3 : mesh Th = readmesh(name + ".mesh");
+    4 : plot(Th);
+    5 : savemesh(Th, name + ".msh"); sizestack + 1024 =1288  ( 264 )
+ 
+  --  mesh:  Nb of Triangles =  12673, Nb of Vertices 6724
+  number of required edges : 0
+times: compile 0.07s, execution 0.546s,  mpirank:0
+ ######## We forget of deleting   58 Nb pointer,   0Bytes  ,  mpirank 0, memory leak =0
+ CodeAlloc : nb ptr  2730,  size :373040 mpirank: 0
+Ok: Normal End
+ try getConsole D:\Study\Projects\XNM\codes\mesh\convert.edp

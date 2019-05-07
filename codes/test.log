@@ -1,0 +1,2552 @@
+-- FreeFem++ v  3.610001 (date jeu. 12 juil. 2018 15:05:23)
+ Load: lg_fem lg_mesh lg_mesh3 eigenvalue
+    1 : string filemesh = "Th2";
+    2 : mesh Th = readmesh(filemesh + ".mesh");
+    3 :
+    4 : fespace Xh(Th,P2); // definition of the velocity component space
+    5 : fespace Mh(Th,P1); // definition of the pressure space
+    6 : Xh u2, v2, u1, v1;
+    7 : Xh u1old=0.5, u2old=0.5;
+    8 : Mh p, q, vort;
+    9 : macro Grad(u) [dx(u),dy(u)] )   [dx(u),dy(u)]//
+   10 : macro div(u, v) (dx(u)+dy(v)) )   (dx(u)+dy(v))//
+   11 : real dt=0.1, mu=2.67 * 1e-4;
+   12 : for(int i=0; i<500; i++){
+   13 :         Xh u1oldtemp=convect([u1old,u2old],-dt,u1old);
+   14 :         Xh u2oldtemp=convect([u1old,u2old],-dt,u2old);
+   15 :
+   16 :         solve NavierStokes ([u1,u2,p],[v1,v2,q],solver = Crout)=
+   17 :         int2d(Th)
+   18 :         (
+   19 :                 1.0/dt*(u1*v1+u2*v2)
+   20 :                 + mu*(Grad(u1)  [dx(u1),dy(u1)]'*Grad(v1)  [dx(v1),dy(v1)]+Grad(u2)  [dx(u2),dy(u2)]'*Grad(v2)
+[dx(v2),dy(v2)])
+   21 :             - 1e-10*p*q
+   22 :             - p*div(v1, v2)  (dx(v1)+dy( v2))
+   23 :             - q*div(u1, u2)  (dx(u1)+dy( u2))
+   24 :         )
+   25 :         - int2d(Th)(1.0/dt*(u1oldtemp*v1+u2oldtemp*v2))
+   26 :         + on(1, u1 =0, u2 = 0) + on(2, u1 =1, u2 =0);
+   27 :
+   28 :         u1old=u1;
+   29 :         u2old=u2;
+   30 :
+   31 :     plot([u1, u2]);
+   32 :         /*
+   33 :         // streamline
+   34 :         Xh psi,phi;
+   35 :     solve streamlines(psi,phi) =
+   36 :         int2d(Th)( dx(psi)*dx(phi) + dy(psi)*dy(phi))
+   37 :         + int2d(Th)(-phi * (dy(u1)-dx(u2))) + on(1, 3, 5, psi = 0)+on(4, psi=0);
+   38 :
+   39 :         //vort=dy(u1) - dx(u2);
+   40 :     //plot( vort, dim=2d, fill=0, wait=0);
+   41 :     plot(psi, fill=true);*/
+   42 : } sizestack + 1024 =3584  ( 2560 )
+ 
+  --  mesh:  Nb of Triangles =   3186, Nb of Vertices 1787
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.66363  max 1.92216
+          min -0.732814  max 1.21154
+          min -15779.1  max 27037
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.63517  max 1.92271
+          min -0.721412  max 1.19273
+          min -3.3583  max 881.227
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.63325  max 1.92231
+          min -0.720731  max 1.19215
+          min -0.076797  max 43.9414
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.63335  max 1.92185
+          min -0.720873  max 1.19254
+          min -0.406064  max 2.8843
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.63357  max 1.92139
+          min -0.721061  max 1.19297
+          min -0.436371  max 1.34982
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.63379  max 1.92092
+          min -0.721252  max 1.19341
+          min -0.438077  max 1.29023
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.63402  max 1.92046
+          min -0.721443  max 1.19385
+          min -0.438227  max 1.28539
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.63424  max 1.91999
+          min -0.721634  max 1.19428
+          min -0.43835  max 1.27831
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.63446  max 1.91953
+          min -0.721825  max 1.19472
+          min -0.438425  max 1.28234
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.63469  max 1.91907
+          min -0.722016  max 1.19516
+          min -0.438496  max 1.27497
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.63491  max 1.91861
+          min -0.722207  max 1.1956
+          min -0.438597  max 1.27928
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.63514  max 1.91814
+          min -0.722397  max 1.19604
+          min -0.438689  max 1.27232
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.63536  max 1.91768
+          min -0.722588  max 1.19647
+          min -0.438764  max 1.27632
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.63559  max 1.91722
+          min -0.722778  max 1.19691
+          min -0.438828  max 1.2747
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.63581  max 1.91676
+          min -0.722968  max 1.19735
+          min -0.438915  max 1.27318
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.63604  max 1.9163
+          min -0.723158  max 1.19779
+          min -0.439034  max 1.26634
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.63626  max 1.91585
+          min -0.723349  max 1.19823
+          min -0.439095  max 1.26435
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.63649  max 1.91539
+          min -0.723538  max 1.19867
+          min -0.439205  max 1.26315
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.63671  max 1.91493
+          min -0.723728  max 1.1991
+          min -0.43929  max 1.26173
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.63694  max 1.91447
+          min -0.723918  max 1.19954
+          min -0.439354  max 1.25995
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.63716  max 1.91402
+          min -0.724108  max 1.19998
+          min -0.439452  max 1.26445
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.63739  max 1.91356
+          min -0.724297  max 1.20042
+          min -0.439515  max 1.26289
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.63761  max 1.9131
+          min -0.724487  max 1.20086
+          min -0.439636  max 1.25605
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.63784  max 1.91265
+          min -0.724676  max 1.2013
+          min -0.439699  max 1.25409
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.63806  max 1.91219
+          min -0.724865  max 1.20174
+          min -0.439786  max 1.25257
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.63829  max 1.91174
+          min -0.725054  max 1.20218
+          min -0.439873  max 1.2511
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.63851  max 1.91129
+          min -0.725243  max 1.20262
+          min -0.439971  max 1.25567
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.63874  max 1.91083
+          min -0.725432  max 1.20305
+          min -0.440065  max 1.24875
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.63896  max 1.91038
+          min -0.725621  max 1.20349
+          min -0.440131  max 1.24678
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.63919  max 1.90993
+          min -0.72581  max 1.20393
+          min -0.440233  max 1.25134
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.63941  max 1.90948
+          min -0.725999  max 1.20437
+          min -0.440316  max 1.2501
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.63964  max 1.90902
+          min -0.726187  max 1.20481
+          min -0.440414  max 1.24299
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.63987  max 1.90857
+          min -0.726376  max 1.20525
+          min -0.440479  max 1.24101
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.64009  max 1.90812
+          min -0.726564  max 1.20569
+          min -0.44056  max 1.24525
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.64032  max 1.90767
+          min -0.726752  max 1.20619
+          min -0.440667  max 1.2443
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.64054  max 1.90722
+          min -0.72694  max 1.20683
+          min -0.440731  max 1.24258
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.64077  max 1.90678
+          min -0.727128  max 1.20746
+          min -0.440832  max 1.23544
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.64099  max 1.90633
+          min -0.727316  max 1.2081
+          min -0.440919  max 1.23381
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.64122  max 1.90588
+          min -0.727504  max 1.20874
+          min -0.440998  max 1.23809
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.64145  max 1.90543
+          min -0.727692  max 1.20938
+          min -0.441108  max 1.23719
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.64167  max 1.90499
+          min -0.727879  max 1.21002
+          min -0.441203  max 1.23121
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.6419  max 1.90454
+          min -0.728067  max 1.21066
+          min -0.44126  max 1.23452
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.64213  max 1.90409
+          min -0.728254  max 1.21129
+          min -0.441348  max 1.23384
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.64235  max 1.90365
+          min -0.728442  max 1.21193
+          min -0.441459  max 1.23346
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.64258  max 1.9032
+          min -0.728629  max 1.21257
+          min -0.441554  max 1.22788
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.6428  max 1.90276
+          min -0.728816  max 1.21321
+          min -0.441615  max 1.23125
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.64303  max 1.90231
+          min -0.729003  max 1.21385
+          min -0.441735  max 1.22624
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.64326  max 1.90187
+          min -0.72919  max 1.21448
+          min -0.441813  max 1.23003
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.64348  max 1.90143
+          min -0.729377  max 1.21512
+          min -0.441878  max 1.22901
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.64371  max 1.90099
+          min -0.729564  max 1.21576
+          min -0.441999  max 1.22379
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.64394  max 1.90054
+          min -0.729751  max 1.2164
+          min -0.442058  max 1.2272
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.64417  max 1.9001
+          min -0.729938  max 1.21703
+          min -0.442179  max 1.22219
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.64439  max 1.89966
+          min -0.730124  max 1.21767
+          min -0.442257  max 1.22599
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.64462  max 1.89922
+          min -0.730311  max 1.21831
+          min -0.442323  max 1.22498
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.64485  max 1.89878
+          min -0.730497  max 1.21895
+          min -0.442426  max 1.21939
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.64507  max 1.89834
+          min -0.730683  max 1.21958
+          min -0.442506  max 1.22315
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.6453  max 1.8979
+          min -0.730869  max 1.22022
+          min -0.442625  max 1.21819
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.64553  max 1.89746
+          min -0.731055  max 1.22086
+          min -0.442704  max 1.22199
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.64575  max 1.89702
+          min -0.731241  max 1.22149
+          min -0.44277  max 1.22101
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.64598  max 1.89659
+          min -0.731427  max 1.22213
+          min -0.442861  max 1.2201
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.64621  max 1.89615
+          min -0.731613  max 1.22277
+          min -0.442973  max 1.21972
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.64644  max 1.89571
+          min -0.731799  max 1.2234
+          min -0.443042  max 1.21859
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.64666  max 1.89527
+          min -0.731984  max 1.22404
+          min -0.443142  max 1.21296
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.64689  max 1.89484
+          min -0.73217  max 1.22467
+          min -0.443223  max 1.21674
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.64712  max 1.8944
+          min -0.732355  max 1.22531
+          min -0.443321  max 1.21137
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.64735  max 1.89397
+          min -0.732541  max 1.22595
+          min -0.443438  max 1.21085
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.64758  max 1.89353
+          min -0.732726  max 1.22658
+          min -0.443504  max 1.20968
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.6478  max 1.8931
+          min -0.732911  max 1.22722
+          min -0.443617  max 1.20927
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.64803  max 1.89266
+          min -0.733096  max 1.22785
+          min -0.443705  max 1.20851
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.64826  max 1.89223
+          min -0.733281  max 1.22849
+          min -0.443763  max 1.2121
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.64849  max 1.8918
+          min -0.733466  max 1.22913
+          min -0.443859  max 1.2116
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.64872  max 1.89137
+          min -0.733651  max 1.22976
+          min -0.44396  max 1.20606
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.64894  max 1.89093
+          min -0.733836  max 1.2304
+          min -0.444075  max 1.20551
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.64917  max 1.8905
+          min -0.734021  max 1.23103
+          min -0.444164  max 1.20477
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.6494  max 1.89007
+          min -0.734205  max 1.23167
+          min -0.444245  max 1.20879
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.64963  max 1.88964
+          min -0.73439  max 1.2323
+          min -0.444346  max 1.2035
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.64986  max 1.88921
+          min -0.734574  max 1.23294
+          min -0.444439  max 1.20254
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.65009  max 1.88878
+          min -0.734759  max 1.23357
+          min -0.44453  max 1.20178
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.65032  max 1.88835
+          min -0.734943  max 1.23421
+          min -0.444586  max 1.20533
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.65054  max 1.88792
+          min -0.735127  max 1.23484
+          min -0.444713  max 1.20042
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.65077  max 1.88749
+          min -0.735311  max 1.23548
+          min -0.444802  max 1.19949
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.651  max 1.88706
+          min -0.735495  max 1.23611
+          min -0.444872  max 1.19831
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.65123  max 1.88664
+          min -0.735679  max 1.23675
+          min -0.444957  max 1.20232
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.65146  max 1.88621
+          min -0.735863  max 1.23738
+          min -0.445069  max 1.2022
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.65169  max 1.88578
+          min -0.736047  max 1.23801
+          min -0.445171  max 1.19674
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.65192  max 1.88535
+          min -0.73623  max 1.23865
+          min -0.445254  max 1.20057
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.65215  max 1.88493
+          min -0.736414  max 1.23928
+          min -0.445324  max 1.19963
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.65238  max 1.8845
+          min -0.736597  max 1.23992
+          min -0.445417  max 1.19885
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.65261  max 1.88408
+          min -0.736781  max 1.24055
+          min -0.44554  max 1.19373
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.65284  max 1.88365
+          min -0.736964  max 1.24119
+          min -0.445613  max 1.19244
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.65306  max 1.88323
+          min -0.737148  max 1.24182
+          min -0.445717  max 1.19683
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.65329  max 1.8828
+          min -0.737331  max 1.24245
+          min -0.445787  max 1.19596
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.65352  max 1.88238
+          min -0.737514  max 1.24309
+          min -0.445881  max 1.19521
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.65375  max 1.88196
+          min -0.737697  max 1.24372
+          min -0.445997  max 1.1949
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.65398  max 1.88154
+          min -0.73788  max 1.24435
+          min -0.446064  max 1.19377
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.65421  max 1.88111
+          min -0.738063  max 1.24499
+          min -0.446158  max 1.19297
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.65444  max 1.88069
+          min -0.738245  max 1.24562
+          min -0.446253  max 1.19226
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.65467  max 1.88027
+          min -0.738428  max 1.24625
+          min -0.446347  max 1.19158
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.6549  max 1.87985
+          min -0.738611  max 1.24689
+          min -0.446472  max 1.1865
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.65513  max 1.87943
+          min -0.738793  max 1.24752
+          min -0.446568  max 1.18565
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.65536  max 1.87901
+          min -0.738976  max 1.24815
+          min -0.446661  max 1.18493
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.65559  max 1.87859
+          min -0.739158  max 1.24879
+          min -0.446722  max 1.18858
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.65582  max 1.87817
+          min -0.73934  max 1.24942
+          min -0.446814  max 1.188
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.65605  max 1.87775
+          min -0.739523  max 1.25005
+          min -0.44692  max 1.18253
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.65628  max 1.87733
+          min -0.739705  max 1.25068
+          min -0.447029  max 1.18684
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.65652  max 1.87691
+          min -0.739887  max 1.25132
+          min -0.447106  max 1.18116
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.65675  max 1.87649
+          min -0.740069  max 1.25195
+          min -0.447192  max 1.18496
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.65698  max 1.87608
+          min -0.740251  max 1.25258
+          min -0.447286  max 1.18447
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.65721  max 1.87566
+          min -0.740433  max 1.25321
+          min -0.447393  max 1.17906
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.65744  max 1.87524
+          min -0.740614  max 1.25385
+          min -0.447508  max 1.17853
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.65767  max 1.87483
+          min -0.740796  max 1.25448
+          min -0.44758  max 1.17746
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.6579  max 1.87441
+          min -0.740978  max 1.25511
+          min -0.447676  max 1.17672
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.65813  max 1.874
+          min -0.741159  max 1.25574
+          min -0.447795  max 1.17649
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.65836  max 1.87358
+          min -0.741341  max 1.25638
+          min -0.447864  max 1.17542
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.65859  max 1.87317
+          min -0.741522  max 1.25701
+          min -0.447974  max 1.17992
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.65882  max 1.87275
+          min -0.741703  max 1.25764
+          min -0.448051  max 1.17424
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.65906  max 1.87234
+          min -0.741885  max 1.25827
+          min -0.448163  max 1.17854
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.65929  max 1.87192
+          min -0.742066  max 1.2589
+          min -0.448231  max 1.17764
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.65952  max 1.87151
+          min -0.742247  max 1.25953
+          min -0.448352  max 1.17737
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.65975  max 1.8711
+          min -0.742428  max 1.26017
+          min -0.448446  max 1.17672
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.65998  max 1.87069
+          min -0.742609  max 1.2608
+          min -0.448541  max 1.17606
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.66021  max 1.87027
+          min -0.74279  max 1.26143
+          min -0.448648  max 1.17061
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.66044  max 1.86986
+          min -0.742971  max 1.26206
+          min -0.448744  max 1.16971
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.66068  max 1.86945
+          min -0.743151  max 1.26269
+          min -0.448838  max 1.16899
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.66091  max 1.86904
+          min -0.743332  max 1.26332
+          min -0.448935  max 1.16834
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.66114  max 1.86863
+          min -0.743513  max 1.26395
+          min -0.449033  max 1.1677
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.66137  max 1.86822
+          min -0.743693  max 1.26459
+          min -0.449127  max 1.16702
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.6616  max 1.86781
+          min -0.743874  max 1.26522
+          min -0.449191  max 1.17069
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.66184  max 1.8674
+          min -0.744054  max 1.26585
+          min -0.44931  max 1.17062
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.66207  max 1.86699
+          min -0.744234  max 1.26648
+          min -0.449391  max 1.16478
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.6623  max 1.86658
+          min -0.744415  max 1.26711
+          min -0.44948  max 1.16864
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.66253  max 1.86618
+          min -0.744595  max 1.26774
+          min -0.449589  max 1.16345
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.66277  max 1.86577
+          min -0.744775  max 1.26837
+          min -0.449697  max 1.16778
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.663  max 1.86536
+          min -0.744955  max 1.269
+          min -0.449801  max 1.16257
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.66323  max 1.86495
+          min -0.745135  max 1.26963
+          min -0.449899  max 1.16171
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.66346  max 1.86455
+          min -0.745315  max 1.27026
+          min -0.449964  max 1.16543
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.6637  max 1.86414
+          min -0.745495  max 1.27089
+          min -0.45006  max 1.16492
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.66393  max 1.86373
+          min -0.745674  max 1.27152
+          min -0.450192  max 1.15996
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.66416  max 1.86333
+          min -0.745854  max 1.27215
+          min -0.450287  max 1.1591
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.6644  max 1.86292
+          min -0.746034  max 1.27278
+          min -0.450362  max 1.15803
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.66463  max 1.86252
+          min -0.746213  max 1.27341
+          min -0.450483  max 1.15776
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.66486  max 1.86211
+          min -0.746393  max 1.27404
+          min -0.450556  max 1.15674
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.6651  max 1.86171
+          min -0.746572  max 1.27467
+          min -0.450667  max 1.16124
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.66533  max 1.86131
+          min -0.746751  max 1.2753
+          min -0.45074  max 1.16044
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.66556  max 1.8609
+          min -0.746931  max 1.27593
+          min -0.450864  max 1.15965
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.6658  max 1.8605
+          min -0.74711  max 1.27656
+          min -0.450946  max 1.15378
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.66603  max 1.8601
+          min -0.747289  max 1.27719
+          min -0.451037  max 1.15766
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.66626  max 1.85969
+          min -0.747468  max 1.27782
+          min -0.451136  max 1.15725
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.6665  max 1.85929
+          min -0.747647  max 1.27845
+          min -0.451244  max 1.15175
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.66673  max 1.85889
+          min -0.747826  max 1.27908
+          min -0.451355  max 1.15609
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.66696  max 1.85849
+          min -0.748005  max 1.27971
+          min -0.451462  max 1.15096
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.6672  max 1.85809
+          min -0.748184  max 1.28034
+          min -0.45156  max 1.15011
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.66743  max 1.85769
+          min -0.748362  max 1.28097
+          min -0.451637  max 1.14905
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.66767  max 1.85729
+          min -0.748541  max 1.2816
+          min -0.451748  max 1.15357
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.6679  max 1.85689
+          min -0.74872  max 1.28222
+          min -0.45182  max 1.15274
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.66813  max 1.85649
+          min -0.748898  max 1.28285
+          min -0.451922  max 1.1521
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.66837  max 1.85609
+          min -0.749077  max 1.28348
+          min -0.452055  max 1.14716
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.6686  max 1.85569
+          min -0.749255  max 1.28411
+          min -0.452143  max 1.15114
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.66884  max 1.85529
+          min -0.749434  max 1.28474
+          min -0.452225  max 1.14547
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.66907  max 1.85489
+          min -0.749612  max 1.28537
+          min -0.452319  max 1.14939
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.66931  max 1.8545
+          min -0.74979  max 1.286
+          min -0.452415  max 1.14897
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.66954  max 1.8541
+          min -0.749968  max 1.28663
+          min -0.452526  max 1.14361
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.66977  max 1.8537
+          min -0.750146  max 1.28725
+          min -0.452651  max 1.14324
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.67001  max 1.85331
+          min -0.750324  max 1.28788
+          min -0.452735  max 1.14739
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.67024  max 1.85291
+          min -0.750502  max 1.28851
+          min -0.452845  max 1.14224
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.67048  max 1.85251
+          min -0.75068  max 1.28914
+          min -0.452921  max 1.14097
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.67071  max 1.85212
+          min -0.750858  max 1.28977
+          min -0.453016  max 1.14513
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.67095  max 1.85172
+          min -0.751036  max 1.2904
+          min -0.453135  max 1.14516
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.67118  max 1.85133
+          min -0.751214  max 1.29102
+          min -0.45321  max 1.14417
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.67142  max 1.85093
+          min -0.751391  max 1.29165
+          min -0.453335  max 1.14396
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.67165  max 1.85054
+          min -0.751569  max 1.29228
+          min -0.453409  max 1.14293
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.67189  max 1.85014
+          min -0.751746  max 1.29291
+          min -0.453523  max 1.13754
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.67213  max 1.84975
+          min -0.751924  max 1.29353
+          min -0.453614  max 1.14153
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.67236  max 1.84936
+          min -0.752101  max 1.29416
+          min -0.453746  max 1.13681
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.6726  max 1.84896
+          min -0.752279  max 1.29479
+          min -0.453835  max 1.14082
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.67283  max 1.84857
+          min -0.752456  max 1.29542
+          min -0.453936  max 1.14046
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.67307  max 1.84818
+          min -0.752633  max 1.29605
+          min -0.454045  max 1.13511
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.6733  max 1.84779
+          min -0.75281  max 1.29667
+          min -0.454124  max 1.13386
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.67354  max 1.8474
+          min -0.752988  max 1.2973
+          min -0.454238  max 1.13842
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.67378  max 1.847
+          min -0.753165  max 1.29793
+          min -0.454316  max 1.1377
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.67401  max 1.84661
+          min -0.753342  max 1.29855
+          min -0.454448  max 1.1327
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.67425  max 1.84622
+          min -0.753518  max 1.29918
+          min -0.454527  max 1.13152
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.67448  max 1.84583
+          min -0.753695  max 1.29981
+          min -0.45463  max 1.13089
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.67472  max 1.84544
+          min -0.753872  max 1.30044
+          min -0.454732  max 1.13033
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.67496  max 1.84505
+          min -0.754049  max 1.30106
+          min -0.454847  max 1.13498
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.67519  max 1.84466
+          min -0.754226  max 1.30169
+          min -0.454943  max 1.13465
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.67543  max 1.84427
+          min -0.754402  max 1.30232
+          min -0.455025  max 1.13382
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.67567  max 1.84389
+          min -0.754579  max 1.30294
+          min -0.455127  max 1.1332
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.6759  max 1.8435
+          min -0.754755  max 1.30357
+          min -0.455252  max 1.13306
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.67614  max 1.84311
+          min -0.754932  max 1.3042
+          min -0.455328  max 1.13207
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.67638  max 1.84272
+          min -0.755108  max 1.30482
+          min -0.455455  max 1.13193
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.67661  max 1.84233
+          min -0.755285  max 1.30545
+          min -0.455565  max 1.12662
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.67685  max 1.84195
+          min -0.755461  max 1.30608
+          min -0.455644  max 1.12539
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.67709  max 1.84156
+          min -0.755637  max 1.3067
+          min -0.455738  max 1.12955
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.67733  max 1.84117
+          min -0.755813  max 1.30733
+          min -0.455863  max 1.12966
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.67756  max 1.84079
+          min -0.75599  max 1.30796
+          min -0.455962  max 1.12913
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.6778  max 1.8404
+          min -0.756166  max 1.30858
+          min -0.456053  max 1.12339
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.67804  max 1.84002
+          min -0.756342  max 1.30921
+          min -0.45616  max 1.12259
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.67828  max 1.83963
+          min -0.756518  max 1.30984
+          min -0.456251  max 1.12679
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.67851  max 1.83925
+          min -0.756694  max 1.31046
+          min -0.456351  max 1.12642
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.67875  max 1.83886
+          min -0.756869  max 1.31109
+          min -0.456478  max 1.12636
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.67899  max 1.83848
+          min -0.757045  max 1.31171
+          min -0.456564  max 1.12061
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.67923  max 1.83809
+          min -0.757221  max 1.31234
+          min -0.456663  max 1.12462
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.67946  max 1.83771
+          min -0.757397  max 1.31296
+          min -0.456796  max 1.11993
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.6797  max 1.83733
+          min -0.757572  max 1.31359
+          min -0.456887  max 1.12396
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.67994  max 1.83694
+          min -0.757748  max 1.31422
+          min -0.456967  max 1.12321
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.68018  max 1.83656
+          min -0.757923  max 1.31484
+          min -0.457104  max 1.11827
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.68042  max 1.83618
+          min -0.758099  max 1.31547
+          min -0.457185  max 1.11713
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.68065  max 1.8358
+          min -0.758274  max 1.31609
+          min -0.457305  max 1.12179
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.68089  max 1.83542
+          min -0.75845  max 1.31672
+          min -0.457412  max 1.11668
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.68113  max 1.83503
+          min -0.758625  max 1.31734
+          min -0.457485  max 1.12029
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.68137  max 1.83465
+          min -0.7588  max 1.31797
+          min -0.457611  max 1.12035
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.68161  max 1.83427
+          min -0.758976  max 1.31859
+          min -0.457715  max 1.11988
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.68185  max 1.83389
+          min -0.759151  max 1.31922
+          min -0.457794  max 1.11888
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.68209  max 1.83351
+          min -0.759326  max 1.31985
+          min -0.457933  max 1.11397
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.68233  max 1.83313
+          min -0.759501  max 1.32047
+          min -0.458026  max 1.11804
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.68256  max 1.83275
+          min -0.759676  max 1.3211
+          min -0.458132  max 1.11777
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.6828  max 1.83237
+          min -0.759851  max 1.32172
+          min -0.458244  max 1.11244
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.68304  max 1.83199
+          min -0.760026  max 1.32235
+          min -0.458317  max 1.11605
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.68328  max 1.83161
+          min -0.760201  max 1.32297
+          min -0.458417  max 1.11556
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.68352  max 1.83124
+          min -0.760376  max 1.3236
+          min -0.45853  max 1.11024
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.68376  max 1.83086
+          min -0.76055  max 1.32422
+          min -0.458639  max 1.10955
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.684  max 1.83048
+          min -0.760725  max 1.32485
+          min -0.458755  max 1.1141
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.68424  max 1.8301
+          min -0.7609  max 1.32547
+          min -0.458861  max 1.11393
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.68448  max 1.82973
+          min -0.761074  max 1.32609
+          min -0.458963  max 1.11338
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.68472  max 1.82935
+          min -0.761249  max 1.32672
+          min -0.459046  max 1.11244
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.68496  max 1.82897
+          min -0.761423  max 1.32734
+          min -0.459185  max 1.10753
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.6852  max 1.8286
+          min -0.761598  max 1.32797
+          min -0.459259  max 1.11123
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.68544  max 1.82822
+          min -0.761772  max 1.32859
+          min -0.459373  max 1.10609
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.68568  max 1.82784
+          min -0.761947  max 1.32922
+          min -0.459471  max 1.11018
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.68592  max 1.82747
+          min -0.762121  max 1.32984
+          min -0.459597  max 1.11031
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.68616  max 1.82709
+          min -0.762295  max 1.33047
+          min -0.459712  max 1.1051
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.6864  max 1.82672
+          min -0.762469  max 1.33109
+          min -0.459817  max 1.10436
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.68664  max 1.82634
+          min -0.762644  max 1.33171
+          min -0.459914  max 1.10866
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.68688  max 1.82597
+          min -0.762818  max 1.33234
+          min -0.460004  max 1.10314
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.68712  max 1.82559
+          min -0.762992  max 1.33296
+          min -0.460128  max 1.10765
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.68736  max 1.82522
+          min -0.763166  max 1.33359
+          min -0.460239  max 1.1026
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.6876  max 1.82485
+          min -0.76334  max 1.33421
+          min -0.460323  max 1.10149
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.68784  max 1.82447
+          min -0.763514  max 1.33483
+          min -0.46043  max 1.10093
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.68808  max 1.8241
+          min -0.763688  max 1.33546
+          min -0.46055  max 1.10568
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.68832  max 1.82373
+          min -0.763861  max 1.33608
+          min -0.460631  max 1.10505
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.68857  max 1.82336
+          min -0.764035  max 1.3367
+          min -0.460773  max 1.10021
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.68881  max 1.82298
+          min -0.764209  max 1.33733
+          min -0.460852  max 1.09906
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.68905  max 1.82261
+          min -0.764383  max 1.33795
+          min -0.460986  max 1.099
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.68929  max 1.82224
+          min -0.764556  max 1.33858
+          min -0.46109  max 1.0986
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.68953  max 1.82187
+          min -0.76473  max 1.3392
+          min -0.461198  max 1.09816
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.68977  max 1.8215
+          min -0.764904  max 1.33982
+          min -0.461293  max 1.10254
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.69001  max 1.82113
+          min -0.765077  max 1.34045
+          min -0.461409  max 1.0975
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.69025  max 1.82076
+          min -0.765251  max 1.34107
+          min -0.461482  max 1.10114
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.6905  max 1.82039
+          min -0.765424  max 1.34169
+          min -0.4616  max 1.09605
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.69074  max 1.82002
+          min -0.765598  max 1.34232
+          min -0.461722  max 1.10062
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.69098  max 1.81965
+          min -0.765771  max 1.34294
+          min -0.461826  max 1.10041
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.69122  max 1.81928
+          min -0.765944  max 1.34356
+          min -0.461921  max 1.09475
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.69146  max 1.81891
+          min -0.766117  max 1.34419
+          min -0.462045  max 1.09927
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.69171  max 1.81854
+          min -0.766291  max 1.34481
+          min -0.462126  max 1.09862
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.69195  max 1.81817
+          min -0.766464  max 1.34543
+          min -0.462259  max 1.09857
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.69219  max 1.8178
+          min -0.766637  max 1.34605
+          min -0.462349  max 1.09288
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.69243  max 1.81744
+          min -0.76681  max 1.34668
+          min -0.462461  max 1.0922
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.69268  max 1.81707
+          min -0.766983  max 1.3473
+          min -0.462568  max 1.09171
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.69292  max 1.8167
+          min -0.767156  max 1.34792
+          min -0.46269  max 1.09651
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.69316  max 1.81633
+          min -0.767329  max 1.34855
+          min -0.462803  max 1.09152
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.6934  max 1.81597
+          min -0.767502  max 1.34917
+          min -0.46289  max 1.09044
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.69365  max 1.8156
+          min -0.767675  max 1.34979
+          min -0.463014  max 1.09517
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.69389  max 1.81523
+          min -0.767848  max 1.35041
+          min -0.463119  max 1.09498
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.69413  max 1.81487
+          min -0.76802  max 1.35104
+          min -0.463205  max 1.09413
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.69438  max 1.8145
+          min -0.768193  max 1.35166
+          min -0.463337  max 1.09408
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.69462  max 1.81414
+          min -0.768366  max 1.35228
+          min -0.463445  max 1.09369
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.69486  max 1.81377
+          min -0.768538  max 1.3529
+          min -0.463562  max 1.08844
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.69511  max 1.81341
+          min -0.768711  max 1.35353
+          min -0.463637  max 1.0921
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.69535  max 1.81304
+          min -0.768884  max 1.35415
+          min -0.463772  max 1.0923
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.69559  max 1.81268
+          min -0.769056  max 1.35477
+          min -0.463867  max 1.0867
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.69584  max 1.81231
+          min -0.769229  max 1.35539
+          min -0.463966  max 1.09075
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.69608  max 1.81195
+          min -0.769401  max 1.35602
+          min -0.464099  max 1.091
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.69632  max 1.81159
+          min -0.769573  max 1.35664
+          min -0.464191  max 1.08537
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.69657  max 1.81122
+          min -0.769746  max 1.35726
+          min -0.464328  max 1.08516
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.69681  max 1.81086
+          min -0.769918  max 1.35788
+          min -0.464413  max 1.08434
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.69706  max 1.8105
+          min -0.770091  max 1.3585
+          min -0.464548  max 1.08432
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.6973  max 1.81013
+          min -0.770263  max 1.35913
+          min -0.464643  max 1.08869
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.69754  max 1.80977
+          min -0.770435  max 1.35975
+          min -0.464753  max 1.08849
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.69779  max 1.80941
+          min -0.770607  max 1.36037
+          min -0.46486  max 1.08803
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.69803  max 1.80905
+          min -0.770779  max 1.36099
+          min -0.464957  max 1.08227
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.69828  max 1.80869
+          min -0.770951  max 1.36161
+          min -0.46506  max 1.08637
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.69852  max 1.80833
+          min -0.771123  max 1.36223
+          min -0.465171  max 1.08621
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.69877  max 1.80796
+          min -0.771295  max 1.36286
+          min -0.465291  max 1.08102
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.69901  max 1.8076
+          min -0.771467  max 1.36348
+          min -0.465413  max 1.08557
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.69926  max 1.80724
+          min -0.771639  max 1.3641
+          min -0.465508  max 1.08021
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.6995  max 1.80688
+          min -0.771811  max 1.36472
+          min -0.465633  max 1.08475
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.69975  max 1.80652
+          min -0.771983  max 1.36534
+          min -0.465753  max 1.07985
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.69999  max 1.80616
+          min -0.772155  max 1.36596
+          min -0.465831  max 1.08359
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.70024  max 1.8058
+          min -0.772327  max 1.36659
+          min -0.465952  max 1.07857
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.70048  max 1.80544
+          min -0.772499  max 1.36721
+          min -0.466077  max 1.08318
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.70073  max 1.80509
+          min -0.77267  max 1.36783
+          min -0.466194  max 1.07824
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.70097  max 1.80473
+          min -0.772842  max 1.36845
+          min -0.466295  max 1.08239
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.70122  max 1.80437
+          min -0.773014  max 1.36907
+          min -0.466415  max 1.07743
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.70146  max 1.80401
+          min -0.773185  max 1.36969
+          min -0.466495  max 1.08117
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.70171  max 1.80365
+          min -0.773357  max 1.37031
+          min -0.466615  max 1.07613
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.70195  max 1.80329
+          min -0.773528  max 1.37094
+          min -0.466743  max 1.08078
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.7022  max 1.80294
+          min -0.7737  max 1.37156
+          min -0.466837  max 1.07541
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.70245  max 1.80258
+          min -0.773871  max 1.37218
+          min -0.466965  max 1.08
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.70269  max 1.80222
+          min -0.774043  max 1.3728
+          min -0.467059  max 1.07463
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.70294  max 1.80187
+          min -0.774214  max 1.37342
+          min -0.467196  max 1.07443
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.70318  max 1.80151
+          min -0.774386  max 1.37404
+          min -0.467284  max 1.07364
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.70343  max 1.80115
+          min -0.774557  max 1.37466
+          min -0.467421  max 1.07367
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.70368  max 1.8008
+          min -0.774728  max 1.37528
+          min -0.467519  max 1.0781
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.70392  max 1.80044
+          min -0.774899  max 1.3759
+          min -0.467628  max 1.0779
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.70417  max 1.80009
+          min -0.775071  max 1.37652
+          min -0.467741  max 1.07773
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.70442  max 1.79973
+          min -0.775242  max 1.37714
+          min -0.467839  max 1.07211
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.70466  max 1.79938
+          min -0.775413  max 1.37777
+          min -0.467944  max 1.07626
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.70491  max 1.79902
+          min -0.775584  max 1.37839
+          min -0.468056  max 1.07612
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.70516  max 1.79867
+          min -0.775755  max 1.37901
+          min -0.468168  max 1.07575
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.7054  max 1.79831
+          min -0.775926  max 1.37963
+          min -0.468289  max 1.07058
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.70565  max 1.79796
+          min -0.776097  max 1.38025
+          min -0.468392  max 1.07475
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.7059  max 1.7976
+          min -0.776268  max 1.38087
+          min -0.468536  max 1.07024
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.70615  max 1.79725
+          min -0.776439  max 1.38149
+          min -0.468617  max 1.07408
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.70639  max 1.7969
+          min -0.77661  max 1.38211
+          min -0.46873  max 1.07387
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.70664  max 1.79654
+          min -0.776781  max 1.38273
+          min -0.468874  max 1.06913
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.70689  max 1.79619
+          min -0.776952  max 1.38335
+          min -0.468962  max 1.06813
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.70714  max 1.79584
+          min -0.777123  max 1.38397
+          min -0.469104  max 1.06822
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.70738  max 1.79549
+          min -0.777293  max 1.38459
+          min -0.469189  max 1.06742
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.70763  max 1.79513
+          min -0.777464  max 1.38521
+          min -0.469306  max 1.06705
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.70788  max 1.79478
+          min -0.777635  max 1.38583
+          min -0.469419  max 1.06669
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.70813  max 1.79443
+          min -0.777806  max 1.38645
+          min -0.469553  max 1.06674
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.70838  max 1.79408
+          min -0.777976  max 1.38707
+          min -0.469641  max 1.06597
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.70862  max 1.79373
+          min -0.778147  max 1.38769
+          min -0.46975  max 1.07047
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.70887  max 1.79338
+          min -0.778317  max 1.38831
+          min -0.469873  max 1.06553
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.70912  max 1.79302
+          min -0.778488  max 1.38893
+          min -0.469987  max 1.06497
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.70937  max 1.79267
+          min -0.778658  max 1.38955
+          min -0.470102  max 1.06506
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.70962  max 1.79232
+          min -0.778829  max 1.39017
+          min -0.470236  max 1.06514
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.70987  max 1.79197
+          min -0.779  max 1.39079
+          min -0.470348  max 1.06483
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.71012  max 1.79162
+          min -0.77917  max 1.39141
+          min -0.470465  max 1.06454
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.71037  max 1.79127
+          min -0.77934  max 1.39203
+          min -0.470552  max 1.0637
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.71061  max 1.79093
+          min -0.779511  max 1.39265
+          min -0.470671  max 1.06335
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.71086  max 1.79058
+          min -0.779681  max 1.39327
+          min -0.470782  max 1.06296
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.71111  max 1.79023
+          min -0.779851  max 1.39389
+          min -0.470913  max 1.0679
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.71136  max 1.78988
+          min -0.780022  max 1.39451
+          min -0.470999  max 1.06736
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.71161  max 1.78953
+          min -0.780192  max 1.39513
+          min -0.471139  max 1.06742
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.71186  max 1.78918
+          min -0.780362  max 1.39575
+          min -0.471238  max 1.0619
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.71211  max 1.78883
+          min -0.780532  max 1.39637
+          min -0.471354  max 1.06127
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.71236  max 1.78849
+          min -0.780703  max 1.39699
+          min -0.471493  max 1.06138
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.71261  max 1.78814
+          min -0.780873  max 1.39761
+          min -0.471597  max 1.06585
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.71286  max 1.78779
+          min -0.781043  max 1.39823
+          min -0.471696  max 1.06048
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.71311  max 1.78744
+          min -0.781213  max 1.39885
+          min -0.47183  max 1.06517
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.71336  max 1.7871
+          min -0.781383  max 1.39947
+          min -0.471918  max 1.06464
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.71361  max 1.78675
+          min -0.781553  max 1.40009
+          min -0.472033  max 1.06424
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.71386  max 1.7864
+          min -0.781723  max 1.40071
+          min -0.472157  max 1.05911
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.71411  max 1.78606
+          min -0.781893  max 1.40133
+          min -0.472277  max 1.05861
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.71436  max 1.78571
+          min -0.782063  max 1.40195
+          min -0.472406  max 1.06353
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.71461  max 1.78537
+          min -0.782233  max 1.40257
+          min -0.472516  max 1.06343
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.71486  max 1.78502
+          min -0.782403  max 1.40319
+          min -0.472633  max 1.06315
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.71511  max 1.78467
+          min -0.782573  max 1.4038
+          min -0.472746  max 1.06278
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.71536  max 1.78433
+          min -0.782743  max 1.40442
+          min -0.472875  max 1.05771
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.71561  max 1.78398
+          min -0.782912  max 1.40504
+          min -0.47298  max 1.06194
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.71586  max 1.78364
+          min -0.783082  max 1.40566
+          min -0.473096  max 1.06185
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.71612  max 1.7833
+          min -0.783252  max 1.40628
+          min -0.47321  max 1.06151
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.71637  max 1.78295
+          min -0.783422  max 1.4069
+          min -0.473337  max 1.05641
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.71662  max 1.78261
+          min -0.783591  max 1.40752
+          min -0.473433  max 1.05585
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.71687  max 1.78226
+          min -0.783761  max 1.40814
+          min -0.473574  max 1.05594
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.71712  max 1.78192
+          min -0.783931  max 1.40876
+          min -0.47369  max 1.05569
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.71737  max 1.78158
+          min -0.784101  max 1.40938
+          min -0.473781  max 1.05492
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.71762  max 1.78123
+          min -0.78427  max 1.41
+          min -0.47389  max 1.05938
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.71788  max 1.78089
+          min -0.78444  max 1.41061
+          min -0.474038  max 1.05493
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.71813  max 1.78055
+          min -0.784609  max 1.41123
+          min -0.474154  max 1.05446
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.71838  max 1.78021
+          min -0.784779  max 1.41185
+          min -0.47426  max 1.05895
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.71863  max 1.77986
+          min -0.784948  max 1.41247
+          min -0.474352  max 1.05841
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.71888  max 1.77952
+          min -0.785118  max 1.41309
+          min -0.474473  max 1.05802
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.71914  max 1.77918
+          min -0.785287  max 1.41371
+          min -0.474599  max 1.05291
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.71939  max 1.77884
+          min -0.785457  max 1.41433
+          min -0.474741  max 1.05286
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.71964  max 1.7785
+          min -0.785626  max 1.41495
+          min -0.474831  max 1.05211
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.71989  max 1.77815
+          min -0.785796  max 1.41557
+          min -0.474967  max 1.05708
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.72015  max 1.77781
+          min -0.785965  max 1.41618
+          min -0.475088  max 1.05222
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.7204  max 1.77747
+          min -0.786134  max 1.4168
+          min -0.475182  max 1.05126
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.72065  max 1.77713
+          min -0.786304  max 1.41742
+          min -0.475303  max 1.05094
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.7209  max 1.77679
+          min -0.786473  max 1.41804
+          min -0.47542  max 1.05064
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.72116  max 1.77645
+          min -0.786642  max 1.41866
+          min -0.475563  max 1.05083
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.72141  max 1.77611
+          min -0.786811  max 1.41928
+          min -0.475643  max 1.05491
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.72166  max 1.77577
+          min -0.786981  max 1.4199
+          min -0.475798  max 1.05052
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.72192  max 1.77543
+          min -0.78715  max 1.42051
+          min -0.475881  max 1.05441
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.72217  max 1.77509
+          min -0.787319  max 1.42113
+          min -0.476031  max 1.04992
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.72242  max 1.77475
+          min -0.787488  max 1.42175
+          min -0.47615  max 1.04949
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.72268  max 1.77441
+          min -0.787657  max 1.42237
+          min -0.476258  max 1.054
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.72293  max 1.77408
+          min -0.787826  max 1.42299
+          min -0.476361  max 1.04871
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.72318  max 1.77374
+          min -0.787996  max 1.42361
+          min -0.476497  max 1.05343
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.72344  max 1.7734
+          min -0.788165  max 1.42423
+          min -0.47662  max 1.04859
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.72369  max 1.77306
+          min -0.788334  max 1.42484
+          min -0.476707  max 1.05247
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.72395  max 1.77272
+          min -0.788503  max 1.42546
+          min -0.476852  max 1.05285
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.7242  max 1.77239
+          min -0.788672  max 1.42608
+          min -0.476953  max 1.04735
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.72445  max 1.77205
+          min -0.788841  max 1.4267
+          min -0.4771  max 1.0473
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.72471  max 1.77171
+          min -0.78901  max 1.42732
+          min -0.477205  max 1.05182
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.72496  max 1.77137
+          min -0.789179  max 1.42794
+          min -0.477325  max 1.05182
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.72522  max 1.77104
+          min -0.789348  max 1.42855
+          min -0.477443  max 1.05155
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.72547  max 1.7707
+          min -0.789516  max 1.42917
+          min -0.477548  max 1.04602
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.72573  max 1.77036
+          min -0.789685  max 1.42979
+          min -0.477696  max 1.04599
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.72598  max 1.77003
+          min -0.789854  max 1.43041
+          min -0.477778  max 1.05008
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.72624  max 1.76969
+          min -0.790023  max 1.43103
+          min -0.477933  max 1.04569
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.72649  max 1.76936
+          min -0.790192  max 1.43164
+          min -0.478026  max 1.04477
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.72675  max 1.76902
+          min -0.790361  max 1.43226
+          min -0.478138  max 1.04926
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.727  max 1.76868
+          min -0.790529  max 1.43288
+          min -0.478279  max 1.04966
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.72726  max 1.76835
+          min -0.790698  max 1.4335
+          min -0.478407  max 1.04467
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.72751  max 1.76801
+          min -0.790867  max 1.43412
+          min -0.478517  max 1.04899
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.72777  max 1.76768
+          min -0.791036  max 1.43473
+          min -0.478637  max 1.04896
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.72802  max 1.76734
+          min -0.791204  max 1.43535
+          min -0.478769  max 1.044
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.72828  max 1.76701
+          min -0.791373  max 1.43597
+          min -0.478877  max 1.04829
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.72853  max 1.76668
+          min -0.791542  max 1.43659
+          min -0.478982  max 1.04299
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.72879  max 1.76634
+          min -0.79171  max 1.43721
+          min -0.479092  max 1.04729
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.72905  max 1.76601
+          min -0.791879  max 1.43782
+          min -0.479222  max 1.04248
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.7293  max 1.76567
+          min -0.792048  max 1.43844
+          min -0.479356  max 1.04727
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.72956  max 1.76534
+          min -0.792216  max 1.43906
+          min -0.479451  max 1.04685
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.72981  max 1.76501
+          min -0.792385  max 1.43968
+          min -0.479573  max 1.04656
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.73007  max 1.76467
+          min -0.792553  max 1.4403
+          min -0.479729  max 1.042
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.73033  max 1.76434
+          min -0.792722  max 1.44091
+          min -0.479836  max 1.04635
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.73058  max 1.76401
+          min -0.79289  max 1.44153
+          min -0.479932  max 1.04586
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.73084  max 1.76368
+          min -0.793059  max 1.44215
+          min -0.480067  max 1.04083
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.7311  max 1.76334
+          min -0.793227  max 1.44277
+          min -0.480213  max 1.04083
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.73135  max 1.76301
+          min -0.793396  max 1.44338
+          min -0.480323  max 1.04545
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.73161  max 1.76268
+          min -0.793564  max 1.444
+          min -0.480426  max 1.04014
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.73187  max 1.76235
+          min -0.793732  max 1.44462
+          min -0.480564  max 1.04491
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.73213  max 1.76202
+          min -0.793901  max 1.44524
+          min -0.480696  max 1.04019
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.73238  max 1.76169
+          min -0.794069  max 1.44586
+          min -0.480793  max 1.03928
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.73264  max 1.76135
+          min -0.794238  max 1.44647
+          min -0.48093  max 1.04426
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.7329  max 1.76102
+          min -0.794406  max 1.44709
+          min -0.481058  max 1.03948
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.73315  max 1.76069
+          min -0.794574  max 1.44771
+          min -0.481157  max 1.03859
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.73341  max 1.76036
+          min -0.794743  max 1.44833
+          min -0.481307  max 1.03881
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.73367  max 1.76003
+          min -0.794911  max 1.44894
+          min -0.481423  max 1.03859
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.73393  max 1.7597
+          min -0.795079  max 1.44956
+          min -0.481512  max 1.04272
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.73419  max 1.75937
+          min -0.795248  max 1.45018
+          min -0.48167  max 1.03836
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.73444  max 1.75904
+          min -0.795416  max 1.4508
+          min -0.481767  max 1.03752
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.7347  max 1.75871
+          min -0.795584  max 1.45141
+          min -0.481915  max 1.0377
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.73496  max 1.75838
+          min -0.795752  max 1.45203
+          min -0.482025  max 1.04233
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.73522  max 1.75805
+          min -0.795921  max 1.45265
+          min -0.48213  max 1.03705
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.73548  max 1.75772
+          min -0.796089  max 1.45327
+          min -0.482257  max 1.0366
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.73574  max 1.75739
+          min -0.796257  max 1.45388
+          min -0.48237  max 1.04118
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.73599  max 1.75707
+          min -0.796425  max 1.4545
+          min -0.4825  max 1.03637
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.73625  max 1.75674
+          min -0.796593  max 1.45512
+          min -0.482617  max 1.0408
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.73651  max 1.75641
+          min -0.796761  max 1.45574
+          min -0.482617  max 1.04075
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.73677  max 1.75608
+          min -0.79693  max 1.45635
+          min -0.482776  max 1.03623
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.73703  max 1.75575
+          min -0.797098  max 1.45697
+          min -0.482863  max 1.04017
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.73729  max 1.75543
+          min -0.797266  max 1.45759
+          min -0.482991  max 1.04018
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.73755  max 1.7551
+          min -0.797434  max 1.4582
+          min -0.483124  max 1.0352
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.73781  max 1.75477
+          min -0.797602  max 1.45882
+          min -0.483263  max 1.04004
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.73807  max 1.75444
+          min -0.79777  max 1.45944
+          min -0.483358  max 1.03961
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.73833  max 1.75412
+          min -0.797938  max 1.46006
+          min -0.483507  max 1.0398
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.73859  max 1.75379
+          min -0.798106  max 1.46067
+          min -0.48363  max 1.03965
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.73885  max 1.75346
+          min -0.798274  max 1.46129
+          min -0.48373  max 1.03901
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.73911  max 1.75314
+          min -0.798442  max 1.46191
+          min -0.48389  max 1.03416
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.73937  max 1.75281
+          min -0.79861  max 1.46253
+          min -0.483991  max 1.03333
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.73963  max 1.75248
+          min -0.798778  max 1.46314
+          min -0.484109  max 1.03791
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.73989  max 1.75216
+          min -0.798946  max 1.46376
+          min -0.484264  max 1.03355
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.74015  max 1.75183
+          min -0.799114  max 1.46438
+          min -0.484365  max 1.03275
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.74041  max 1.75151
+          min -0.799282  max 1.46499
+          min -0.484505  max 1.03776
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.74067  max 1.75118
+          min -0.79945  max 1.46561
+          min -0.484613  max 1.03258
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.74093  max 1.75086
+          min -0.799618  max 1.46623
+          min -0.484766  max 1.03262
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.74119  max 1.75053
+          min -0.799786  max 1.46685
+          min -0.484864  max 1.03199
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.74145  max 1.75021
+          min -0.799954  max 1.46746
+          min -0.485004  max 1.037
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.74171  max 1.74988
+          min -0.800122  max 1.46808
+          min -0.485125  max 1.03705
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.74198  max 1.74956
+          min -0.80029  max 1.4687
+          min -0.48526  max 1.03208
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.74224  max 1.74923
+          min -0.800458  max 1.46931
+          min -0.485365  max 1.03121
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.7425  max 1.74891
+          min -0.800626  max 1.46993
+          min -0.485505  max 1.03621
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.74276  max 1.74858
+          min -0.800793  max 1.47055
+          min -0.485613  max 1.03102
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.74302  max 1.74826
+          min -0.800961  max 1.47116
+          min -0.485766  max 1.03106
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.74328  max 1.74794
+          min -0.801129  max 1.47178
+          min -0.485855  max 1.03524
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.74355  max 1.74761
+          min -0.801297  max 1.4724
+          min -0.486006  max 1.03571
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.74381  max 1.74729
+          min -0.801465  max 1.47302
+          min -0.486115  max 1.03031
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.74407  max 1.74697
+          min -0.801633  max 1.47363
+          min -0.486234  max 1.03467
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.74433  max 1.74664
+          min -0.8018  max 1.47425
+          min -0.486385  max 1.0352
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.74459  max 1.74632
+          min -0.801968  max 1.47487
+          min -0.486507  max 1.03505
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.74486  max 1.746
+          min -0.802136  max 1.47548
+          min -0.486619  max 1.02961
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.74512  max 1.74568
+          min -0.802304  max 1.4761
+          min -0.48675  max 1.02921
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.74538  max 1.74535
+          min -0.802471  max 1.47672
+          min -0.486866  max 1.03382
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.74564  max 1.74503
+          min -0.802639  max 1.47733
+          min -0.486988  max 1.03382
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.74591  max 1.74471
+          min -0.802807  max 1.47795
+          min -0.487116  max 1.03369
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.74617  max 1.74439
+          min -0.802975  max 1.47857
+          min -0.487244  max 1.03355
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.74643  max 1.74407
+          min -0.803142  max 1.47918
+          min -0.487393  max 1.03382
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.74669  max 1.74374
+          min -0.80331  max 1.4798
+          min -0.487528  max 1.0289
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.74696  max 1.74342
+          min -0.803478  max 1.48042
+          min -0.487654  max 1.0285
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.74722  max 1.7431
+          min -0.803645  max 1.48103
+          min -0.487782  max 1.02834
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.74748  max 1.74278
+          min -0.803813  max 1.48165
+          min -0.487885  max 1.02774
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.74775  max 1.74246
+          min -0.803981  max 1.48227
+          min -0.488005  max 1.03235
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.74801  max 1.74214
+          min -0.804148  max 1.48288
+          min -0.48819  max 1.02802
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.74828  max 1.74182
+          min -0.804316  max 1.4835
+          min -0.488318  max 1.02772
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.74854  max 1.7415
+          min -0.804484  max 1.48412
+          min -0.488412  max 1.03191
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.7488  max 1.74118
+          min -0.804651  max 1.48474
+          min -0.488565  max 1.0324
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.74907  max 1.74086
+          min -0.804819  max 1.48535
+          min -0.488662  max 1.03177
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.74933  max 1.74054
+          min -0.804987  max 1.48597
+          min -0.488795  max 1.03159
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.7496  max 1.74022
+          min -0.805154  max 1.48659
+          min -0.488957  max 1.02711
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.74986  max 1.7399
+          min -0.805322  max 1.4872
+          min -0.489081  max 1.02673
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.75012  max 1.73958
+          min -0.80549  max 1.48782
+          min -0.489176  max 1.03094
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.75039  max 1.73926
+          min -0.805657  max 1.48844
+          min -0.489306  max 1.03097
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.75065  max 1.73894
+          min -0.805825  max 1.48905
+          min -0.489434  max 1.03083
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.75092  max 1.73863
+          min -0.805992  max 1.48967
+          min -0.48956  max 1.03067
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.75118  max 1.73831
+          min -0.80616  max 1.49029
+          min -0.489713  max 1.03098
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.75145  max 1.73799
+          min -0.806328  max 1.4909
+          min -0.489839  max 1.03086
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.75171  max 1.73767
+          min -0.806495  max 1.49152
+          min -0.489943  max 1.03026
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.75198  max 1.73735
+          min -0.806663  max 1.49214
+          min -0.490083  max 1.02525
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.75224  max 1.73704
+          min -0.80683  max 1.49275
+          min -0.490203  max 1.02969
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.75251  max 1.73672
+          min -0.806998  max 1.49337
+          min -0.490342  max 1.02499
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.75278  max 1.7364
+          min -0.807165  max 1.49399
+          min -0.490494  max 1.02508
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.75304  max 1.73608
+          min -0.807333  max 1.4946
+          min -0.49062  max 1.02496
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.75331  max 1.73577
+          min -0.8075  max 1.49522
+          min -0.490715  max 1.02917
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.75357  max 1.73545
+          min -0.807668  max 1.49584
+          min -0.49087  max 1.02968
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.75384  max 1.73513
+          min -0.807836  max 1.49645
+          min -0.490971  max 1.02911
+times: compile 0.164s, execution 136.07s,  mpirank:0
+ ######## We forget of deleting   9558993 Nb pointer,   0Bytes  ,  mpirank 0, memory leak =0
+ CodeAlloc : nb ptr  2968,  size :386920 mpirank: 0
+Ok: Normal End
+ try getConsole D:\Study\Projects\XNM\codes\test.edp
