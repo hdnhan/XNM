@@ -7,12 +7,19 @@ mesh Th = readmesh(path + filemesh + ".msh");
 //medit("Th", Th);
 
 int NoVMesh; // Number of Vertices Mesh
-if (filemesh == "Th1")
+int[int] neighbor2; // manually
+if (filemesh == "Th1"){
     NoVMesh = 503;
-else if (filemesh == "Th2")
+    neighbor2 = [498, 494, 495, 497, 501];
+}else if (filemesh == "Th2"){
     NoVMesh = 1787;
-else
+    neighbor2 = [2, 9, 18, 7, 21, 22, 14, 5];
+}else{
     NoVMesh = 6724;
+    neighbor2 = [6717, 6718, 6714, 6703, 6698, 6681, 6677, 6676, 6675, 6674, 6673, 6687, 6686, 6704, 6715, 6721];
+}
+//cout << neighbor2 << endl;
+
 
 real[int, int] hz(NoVMesh, 4);
 ifstream filemeshZ(path + filemesh + "CoZ.mesh");
@@ -91,14 +98,14 @@ problem NavierStokes([u1, u2], [v1, v2], solver = Crout) =
     + int2d(Th)((tau * H^(-4.0/3) * (u1old * u1old + u2old * u2old)^(0.5)) * (u1* v1 + u2 * v2))
     + on(2, u1 = u1y, u2 = 0) + on(1, u1 = 0, u2 = 0);
 
-Xh HOld = 9 - z;
+Xh HOld = 9;
+real Hbond2 = 9;
 real H3 = 0, H4 = 0;
-// *****NOTE: Hold or convect(Hold).
 problem TransportEquation(H, phi) = 
     int2d(Th)(H * phi / dt) 
     //- int2d(Th)(convect([u1,u2], -dt, HOld) * phi / dt) + int2d(Th)(H * Div(u1, u2) * phi)
     - int2d(Th)(HOld * phi / dt) + int2d(Th)(Grad(H)' * [u1, u2] * phi + H * Div(u1, u2) * phi)
-    + on(2, H = HOld) + on(1, H = 0) + on(3, H = H3) + on(4, H = H4);
+    + on(2, H = Hbond2) + on(1, H = 0) + on(3, H = H3) + on(4, H = H4);
 
 
 //initial
@@ -157,6 +164,11 @@ for(real t = dt; t < T; t += dt){
     NavierStokes;
     u1old = u1; u2old = u2;
     HOld = H;
+    Hbond2 = 0;
+    for(int it = 0; it < neighbor2.n; it++){
+        Hbond2 += HOld[][neighbor2(it) - 1];
+    }
+    Hbond2 = Hbond2 / neighbor2.n;
     //plot([u1, u2], fill = 1, value = 1);
     plot(H, fill = 1, value = 1);
     // streamline
