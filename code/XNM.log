@@ -3,7 +3,7 @@
     1 : load "medit"(load: loadLibary C:\Program Files (x86)\FreeFem++\\.\medit = 0)
     2 :
     3 : // load mesh
-    4 : string path = "mesh/";
+    4 : string path = "data/";
     5 : string filemesh = "Th2";
     6 : mesh Th = readmesh(path + filemesh + ".msh");
     7 : //medit("Th", Th);
@@ -40,7 +40,7 @@
    38 : }
    39 :
    40 : real[int, int] data(503, 3);
-   41 : ifstream filedata("mesh/data.txt");
+   41 : ifstream filedata(path + "Solieu.txt");
    42 : filedata >> data;
    43 : //cout << data << endl;
    44 :
@@ -204,7 +204,7 @@
   199 :
   200 : }
   201 : savemesh(Th, "result/Th.mesh");
-  202 :  sizestack + 1024 =8708  ( 7684 )
+  202 :  sizestack + 1024 =8868  ( 7844 )
  
   --  mesh:  Nb of Triangles =   3186, Nb of Vertices 1787
 t: 0.01
@@ -299,4 +299,46 @@ HOld: 1e-006 +-+ 19.6255
   -- Solve :
           min -5.47255e-005  max 19.6258
 HOld: 1e-006 +-+ 19.6255
- try getConsole D:\Study\Projects\XNM\codes\XNM.edp
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -0.0349839  max 0.820809
+          min -0.0443328  max 0.82335
+  number of required edges : 0
+ write geo in result/Th.6.mesh.gmsh
+t: 0.08
+HOld: 1e-006 +-+ 19.6258
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -5.4572e-005  max 19.6259
+HOld: 1e-006 +-+ 19.6258
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -0.0396918  max 0.829027
+          min -0.0517272  max 0.830416
+  number of required edges : 0
+ write geo in result/Th.7.mesh.gmsh
+t: 0.09
+HOld: 1e-006 +-+ 19.6259
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -5.44284e-005  max 19.626
+HOld: 1e-006 +-+ 19.6259
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -0.0453792  max 0.837245
+          min -0.0591217  max 0.83748
+  number of required edges : 0
+ write geo in result/Th.8.mesh.gmsh
+t: 0.1
+HOld: 1e-006 +-+ 19.626
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -5.43004e-005  max 19.6262
+HOld: 1e-006 +-+ 19.626
+ try getConsole D:\Study\Projects\XNM\code\XNM.edp

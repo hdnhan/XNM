@@ -1,7 +1,7 @@
 load "medit"
 
 // load mesh
-string path = "mesh/";
+string path = "data/";
 string filemesh = "Th2";
 mesh Th = readmesh(path + filemesh + ".msh");
 //medit("Th", Th);
@@ -38,7 +38,7 @@ func real[int] FillZ(real[int] mat){
 }
 
 real[int, int] data(503, 3);
-ifstream filedata("mesh/data.txt");
+ifstream filedata(path + "Solieu.txt");
 filedata >> data;
 //cout << data << endl;
 
