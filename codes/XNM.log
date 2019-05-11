@@ -1,9 +1,4 @@
-Microsoft Windows [Version 10.0.17763.475]
-(c) 2018 Microsoft Corporation. All rights reserved.
- 
-D:\Study\Projects\XNM\codes>XNM.edp
- 
-D:\Study\Projects\XNM\codes>-- FreeFem++ v  3.610001 (date jeu. 12 juil. 2018 15:05:23)
+-- FreeFem++ v  3.610001 (date jeu. 12 juil. 2018 15:05:23)
  Load: lg_fem lg_mesh lg_mesh3 eigenvalue
     1 : load "medit"(load: loadLibary C:\Program Files (x86)\FreeFem++\\.\medit = 0)
     2 :
@@ -23,7 +18,7 @@ D:\Study\Projects\XNM\codes>-- FreeFem++ v  3.610001 (date jeu. 12 juil. 2018 15
    16 :     neighbor2 = [2, 9, 18, 7, 21, 22, 14, 5];
    17 : }else{
    18 :     NoVMesh = 6724;
-   19 :     neighbor2 = [6717, 6718, 6714, 6703, 6698, 6681, 6677, 6676, 6675, 6674, 6673, 6687, 6686, 6704, 6715, 6721];
+   19 :     neighbor2 = [6717, 6718, 6714, 6703, 6698, 6681, 6677, 6676, 6675, 6674, 6673, 6687, 6686, 6704, 6715, 6721]È™ßt±Ë?;
    20 : }
    21 : //cout << neighbor2 << endl;
    22 :
@@ -103,10 +98,8 @@ D:\Study\Projects\XNM\codes>-- FreeFem++ v  3.610001 (date jeu. 12 juil. 2018 15
    94 :         + convect([u1old, u2old], -dt, u2old) * v2 / dt
    95 :     )
    96 :     + int2d(Th)(g * Grad(eta)    [dx(eta), dy(eta)] ' * [v1, v2])
-   97 :     - int2d(Th)(nu / H * Grad(H)    [dx(H), dy(H)] ' * Grad2(u1, u2)      [[dx(u1), dy(u1)], [dx( u2), dy( u2)]]  * [v1, v2] - nu * Grad1(u1, u2)      [dx(u1), dy(u1), dx(
-u2), dy( u2)] ' * Grad1(v1, v2)      [dx(v1), dy(v1), dx( v2), dy( v2)] )
-   98 :     + int2d(Th)((tau * H^(-4.0/3) * (u1old * u1old + u2old * u2old)^(0.5)) * (u1*
-v1 + u2 * v2))
+   97 :     - int2d(Th)(nu / H * Grad(H)    [dx(H), dy(H)] ' * Grad2(u1, u2)      [[dx(u1), dy(u1)], [dx( u2), dy( u2)]]È™ßt±Ë?  * [v1, v2] - nu * Grad1(u1, u2)      [dx(u1), dy(u1), dx( u2), dy( u2)] ' * Grad1(v1, v2)      [dx(v1), dy(v1), dx( v2È™ßt±Ë?), dy( v2)] )
+   98 :     + int2d(Th)((tau * H^(-4.0/3) * (u1old * u1old + u2old * u2old)^(0.5)) * (u1* v1 + u2 * v2))
    99 :     + on(2, u1 = u1y, u2 = 0) + on(1, u1 = 0, u2 = 0);
   100 :
   101 : Xh HOld = 9 - z;
@@ -114,9 +107,9 @@ v1 + u2 * v2))
   103 : real H3 = 0, H4 = 0;
   104 : problem TransportEquation(H, phi) =
   105 :     int2d(Th)(H * phi / dt)
-  106 :     //- int2d(Th)(convect([u1,u2], -dt, HOld) * phi / dt) + int2d(Th)(H * Div(u1,
-u2) * phi)
-  107 :     - int2d(Th)(HOld * phi / dt) + int2d(Th)(Grad(H)    [dx(H), dy(H)] ' * [u1, u2] * phi + H * Div(u1, u2)     (dx(u1) + dy( u2))  * phi)
+  106 :     //- int2d(Th)(convect([u1,u2], -dt, HOld) * phi / dt) + int2d(Th)(H * Div(u1, u2) * phi)
+  107 :     - int2d(Th)(HOld * phi / dt) + int2d(Th)(Grad(H)    [dx(H), dy(H)] ' * [u1, u2] * phi + H * Div(u1, u2)
+(dx(u1) + dy( u2))  * phi)
   108 :     + on(2, H = Hbond2) + on(1, H = 0) + on(3, H = H3) + on(4, H = H4);
   109 :
   110 :
@@ -196,8 +189,8 @@ u2) * phi)
   184 :     //plot([u1, u2], fill = 1, value = 1);
   185 :     plot(H, fill = 1, value = 1);
   186 :     // streamline
-  187 :     savesol("/result/Th." + string(ii) + ".sol", Th, H); //[u1, u2]
-  188 :         savemesh(Th, "/result/Th." + string(ii)+".mesh");
+  187 :     savesol("result/Th." + string(ii) + ".sol", Th, H); //[u1, u2]
+  188 :         savemesh(Th, "result/Th." + string(ii)+".mesh");
   189 :     ii += 1;
   190 :     if (ii > 10000){
   191 :         break;
@@ -210,8 +203,8 @@ u2) * phi)
   198 :     // plot(psi, fill=true, value = 1);
   199 :
   200 : }
-  201 : savemesh(Th, "/result/Th.mesh");
-  202 :  sizestack + 1024 =8788  ( 7764 )
+  201 : savemesh(Th, "result/Th.mesh");
+  202 :  sizestack + 1024 =9028  ( 8004 )
  
   --  mesh:  Nb of Triangles =   3186, Nb of Vertices 1787
 t: 0.01
@@ -222,8 +215,102 @@ HOld: -8.19413 +-+ 21.6884
   -- Solve :
           min -4.97121  max 19.4762
 HOld: 1e-006 +-+ 21.6884
- kk 2 3 :  Warning: -- Your set of boundary condition is incompatible with the mesh label.  -- Solve :
+ kk 2 3 :  Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
           min -0.00508356  max 0.794746
           min -0.00509605  max 0.790071
-  -- Mesh3::Save  UNABLE TO OPEN  :/result/Th.0.sol
+  number of required edges : 0
+ write geo in result/Th.0.mesh.gmsh
+t: 0.02
+HOld: 1e-006 +-+ 19.4762
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -2.43563e-005  max 19.5427
+HOld: 1e-006 +-+ 19.4762
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -0.0178779  max 0.79356
+          min -0.0177839  max 0.787923
+  number of required edges : 0
+ write geo in result/Th.1.mesh.gmsh
+t: 0.03
+HOld: 1e-006 +-+ 19.5427
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -4.34492e-005  max 19.6094
+HOld: 1e-006 +-+ 19.5427
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -0.0265027  max 0.793233
+          min -0.0263143  max 0.795049
+  number of required edges : 0
+ write geo in result/Th.2.mesh.gmsh
+t: 0.04
+HOld: 1e-006 +-+ 19.6094
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -5.20158e-005  max 19.6223
+HOld: 1e-006 +-+ 19.6094
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -0.0304125  max 0.798651
+          min -0.0301272  max 0.802135
+  number of required edges : 0
+ write geo in result/Th.3.mesh.gmsh
+t: 0.05
+HOld: 1e-006 +-+ 19.6223
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -5.45451e-005  max 19.6249
+HOld: 1e-006 +-+ 19.6223
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -0.0317993  max 0.80437
+          min -0.031423  max 0.809211
+  number of required edges : 0
+ write geo in result/Th.4.mesh.gmsh
+t: 0.06
+HOld: 1e-006 +-+ 19.6249
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -5.4831e-005  max 19.6255
+HOld: 1e-006 +-+ 19.6249
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -0.0334111  max 0.81259
+          min -0.0369384  max 0.816282
+  number of required edges : 0
+ write geo in result/Th.5.mesh.gmsh
+t: 0.07
+HOld: 1e-006 +-+ 19.6255
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -5.47255e-005  max 19.6258
+HOld: 1e-006 +-+ 19.6255
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -0.0349839  max 0.820809
+          min -0.0443328  max 0.82335
+  number of required edges : 0
+ write geo in result/Th.6.mesh.gmsh
+t: 0.08
+HOld: 1e-006 +-+ 19.6258
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -5.4572e-005  max 19.6259
+HOld: 1e-006 +-+ 19.6258
  try getConsole D:\Study\Projects\XNM\codes\XNM.edp
