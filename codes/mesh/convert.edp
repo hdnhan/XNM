@@ -1,5 +1,0 @@
-string name = "Th3";
-
-mesh Th = readmesh(name + ".mesh");
-plot(Th);
-savemesh(Th, name + ".msh");
