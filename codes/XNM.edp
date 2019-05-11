@@ -98,7 +98,7 @@ problem NavierStokes([u1, u2], [v1, v2], solver = Crout) =
     + int2d(Th)((tau * H^(-4.0/3) * (u1old * u1old + u2old * u2old)^(0.5)) * (u1* v1 + u2 * v2))
     + on(2, u1 = u1y, u2 = 0) + on(1, u1 = 0, u2 = 0);
 
-Xh HOld = 9;
+Xh HOld = 9 - z;
 real Hbond2 = 9;
 real H3 = 0, H4 = 0;
 problem TransportEquation(H, phi) = 
@@ -138,6 +138,7 @@ for(int i = 0; i < Th.nbe; i++){
 //cout << Th.hmax << endl;
 int ii = 0;
 real[int] h(nbe2);
+real eps = 1e-6;
 ofstream writefile("velocity.txt");
 for(real t = dt; t < T; t += dt){
     cout << "t: " << t << endl;
@@ -145,8 +146,19 @@ for(real t = dt; t < T; t += dt){
     H3 = QHH(1);
     H4 = QHH(2);
     Xh uOnBoundary2 = 0;
+    cout << "HOld: "<< HOld[].min << " +-+ " << HOld[].max << endl; 
+    for(int it = 0; it < Th.nv; it++){
+        if(HOld[][it] < eps){
+            HOld[][it] = eps;
+        }
+    }
     TransportEquation;
-    
+    cout << "HOld: "<< HOld[].min << " +-+ " << HOld[].max << endl;
+    for(int it = 0; it < Th.nv; it++){
+        if(H[][it] < eps){
+            H[][it] = eps;
+        }
+    }
     //h_i = (H_i + H_i+1)/2....here
     for(int i = 0; i < nbe2; i++){
         h(i) = (H[](points2(i, 0)) + H[](points2(i, 1))) / 2;
