@@ -1,5 +1,5 @@
 load "ppm2rnm" load "isoline" load "medit"
-string image = "../images/image.pgm";
+string image = "../realdata/image.pgm";
 // 580 -> 604 (=24) and 2323 -> 2335 (=12)
 real AreaImage = (24 + 2 * 0.2) * (12 + 2 * 0.2); 
 real [int , int] Curves(3, 1);

@@ -1,0 +1,739 @@
+-- FreeFem++ v  3.610001 (date jeu. 12 juil. 2018 15:05:23)
+ Load: lg_fem lg_mesh lg_mesh3 eigenvalue
+    1 : load "medit"(load: loadLibary C:\Program Files (x86)\FreeFem++\\.\medit = 0)
+    2 :
+    3 : // load mesh
+    4 : string path = "data/";
+    5 : string filemesh = "Th2";
+    6 : mesh Th = readmesh(path + filemesh + ".msh");
+    7 : //medit("Th", Th);
+    8 :
+    9 : int NoVMesh; // Number of Vertices Mesh
+   10 : int[int] neighbor2; // manually
+   11 : if (filemesh == "Th1"){
+   12 :     NoVMesh = 503;
+   13 :     neighbor2 = [498, 494, 495, 497, 501];
+   14 : }else if (filemesh == "Th2"){
+   15 :     NoVMesh = 1787;
+   16 :     neighbor2 = [2, 9, 18, 7, 21, 22, 14, 5];
+   17 : }else{
+   18 :     NoVMesh = 6724;
+   19 :     neighbor2 = [6717, 6718, 6714, 6703, 6698, 6681, 6677, 6676, 6675, 6674, 6673, 6687, 6686, 6704, 6715, 6721]æv;
+   20 : }
+   21 : //cout << neighbor2 << endl;
+   22 :
+   23 :
+   24 : real[int, int] hz(NoVMesh, 4);
+   25 : ifstream filemeshZ(path + filemesh + "CoZ.mesh");
+   26 : filemeshZ >> hz;
+   27 :
+   28 : real[string] mapz;
+   29 : for (int i = 0; i < hz.n; i++){
+   30 :     mapz[string(hz(i, 0)) + " " + string(hz(i, 1))] = hz(i, 2);
+   31 : }
+   32 :
+   33 : func real[int] FillZ(real[int] mat){
+   34 :     for (int i = 0; i < Th.nv; i++){
+   35 :         mat(i) = mapz[string(Th(i).x) + " " + string(Th(i).y)];
+   36 :     }
+   37 :     return mat;
+   38 : }
+   39 :
+   40 : real[int, int] data(503, 4);
+   41 : ifstream filedata(path + "SLMIKE21-4.txt");
+   42 : filedata >> data;
+   43 : //cout << data << endl;
+   44 :
+   45 : func real[int] InterpolationData(real t){
+   46 :     // t: time (unit: second)
+   47 :     real T = 3600;
+   48 :     int n = t /  T;
+   49 :     real delt = t / T - n;
+   50 :     real[int] res(4);
+   51 :     res(0) = data(n, 0) * delt + data(n + 1, 0) * (1 - delt);
+   52 :     res(1) = data(n, 1) * delt + data(n + 1, 1) * (1 - delt);
+   53 :     res(2) = data(n, 2) * delt + data(n + 1, 2) * (1 - delt);
+   54 :     res(3) = data(n, 3) * delt + data(n + 1, 3) * (1 - delt);
+   55 :     return res;
+   56 : }
+   57 :
+   58 : real dt = 0.01, nu = 2.67 * 1e-4, g = 9.81, rho = 100, n = 0.025, T = 9999999; //nu = 2.67 * 1e-4
+   59 : real tau =  g * n * n;
+   60 :
+   61 : fespace Xh(Th, P1);
+   62 : Xh u1, u2, v1, v2;
+   63 : Xh u1old = 0.5, u2old = 0.5, eta, H, phi;
+   64 : Xh z;
+ *** Warning  The identifier z hide a Global identifier
+ z[] = FillZ(z[]);
+   65 : //cout << z[] << endl;
+   66 :
+   67 :
+   68 : macro Grad(u) [dx(u), dy(u)]  )   [dx(u), dy(u)] //
+   69 : macro Grad1(u1, u2) [dx(u1), dy(u1), dx(u2), dy(u2)]  )   [dx(u1), dy(u1), dx(u2), dy(u2)] //
+   70 : macro Grad2(u1, u2) [[dx(u1), dy(u1)], [dx(u2), dy(u2)]]  )   [[dx(u1), dy(u1)], [dx(u2), dy(u2)]] //
+   71 : macro Div(u1, u2) (dx(u1) + dy(u2))  )   (dx(u1) + dy(u2)) //
+   72 :
+   73 : //declare NS problem
+   74 : real uUB = 1;
+   75 : problem NavierStokes([u1, u2], [v1, v2], solver = Crout) =
+   76 :     int2d(Th)((u1 * v1 + u2 * v2) / dt)
+   77 :     - int2d(Th)(
+   78 :         convect([u1old, u2old], -dt, u1old) * v1 / dt
+   79 :         + convect([u1old, u2old], -dt, u2old) * v2 / dt
+   80 :     )
+   81 :     + int2d(Th)(g * Grad(eta)    [dx(eta), dy(eta)] ' * [v1, v2])
+   82 :     - int2d(Th)(nu / H * Grad(H)    [dx(H), dy(H)] ' * Grad2(u1, u2)      [[dx(u1), dy(u1)], [dx( u2), dy( u2)]]æv  * [v1, v2] - nu * Grad1(u1, u2)      [dx(u1), dy(u1), dx( u2), dy( u2)] ' * Grad1(v1, v2)      [dx(v1), dy(v1), dx( v2æv), dy( v2)] )
+   83 :     + int2d(Th)((tau * H^(-4.0/3) * (u1old * u1old + u2old * u2old)^(0.5)) * (u1* v1 + u2 * v2))
+   84 :     + on(2, u1 = uUB, u2 = 0) + on(1, u1 = 0, u2 = 0);
+   85 :
+   86 : Xh HOld = 9 - z;
+   87 : real Hbond2 = 9;
+   88 : real etaUB = 1, etaUB1 = 1, etaUB2 = 1;
+   89 : problem TransportEquation(H, phi) =
+   90 :     int2d(Th)(H * phi / dt)
+   91 :     //- int2d(Th)(convect([u1,u2], -dt, HOld) * phi / dt) + int2d(Th)(H * Div(u1, u2) * phi)
+   92 :     - int2d(Th)(HOld * phi / dt) + int2d(Th)(Grad(H)    [dx(H), dy(H)] ' * [u1, u2] * phi + H * Div(u1, u2)
+(dx(u1) + dy( u2))  * phi)
+   93 :     + on(2, H = etaUB) + on(1, H = 0) + on(3, H = etaUB1) + on(4, H = etaUB2);
+   94 :
+   95 :
+   96 : //initial
+   97 : int nbe2 = 0; // number of boundary element
+   98 : int nlabel = 2;
+   99 : for(int i = 0; i < Th.nbe; i++){
+  100 :     if(Th.be(i)[0].label == nlabel){
+  101 :         if(Th.be(i)[1].label == nlabel){
+  102 :             nbe2 += 1;
+  103 :         }
+  104 :     }
+  105 : }
+  106 :
+  107 : int[int, int] points2(nbe2, 2);
+  108 : real[int] leng2(nbe2);
+  109 : int j = 0;
+  110 : for(int i = 0; i < Th.nbe; i++){
+  111 :     if(Th.be(i)[0].label == nlabel){
+  112 :         if(Th.be(i)[1].label == nlabel){
+  113 :             leng2(j) = sqrt((Th.be(i)[0].x - Th.be(i)[1].x)^2 + (Th.be(i)[0].y - Th.be(i)[1].y)^2);
+  114 :             points2(j, 0) = Th.be(i)[0];
+  115 :             points2(j, 1) = Th.be(i)[1];
+  116 :             j += 1;
+  117 :         }
+  118 :     }
+  119 : }
+  120 : //cout << nbe2 << endl;
+  121 : //cout << points2 << endl;
+  122 : //cout << leng2 << endl;
+  123 : //cout << Th.hmax << endl;
+  124 : int ii = 0;
+  125 : real[int] h(nbe2);
+  126 : real eps = 1e-6;
+  127 : ofstream writefile("velocity.txt");
+  128 : string foldername = "result3/";
+  129 : for(real t = dt; t < T; t += dt){
+  130 :     cout << "t: " << t << endl;
+  131 :     real[int] QHH = InterpolationData(t);
+  132 :     uUB = QHH(0);
+  133 :     etaUB = QHH(1);
+  134 :     etaUB1 = QHH(2);
+  135 :     etaUB2 = QHH(3);
+  136 :     Xh uOnBoundary2 = 0;
+  137 :     // cout << "HOld: "<< HOld[].min << " +-+ " << HOld[].max << endl;
+  138 :     for(int it = 0; it < Th.nv; it++){
+  139 :         if(HOld[][it] < eps){
+  140 :             HOld[][it] = eps;
+  141 :         }
+  142 :     }
+  143 :     TransportEquation;
+  144 :     // cout << "HOld: "<< HOld[].min << " +-+ " << HOld[].max << endl;
+  145 :     for(int it = 0; it < Th.nv; it++){
+  146 :         if(H[][it] < eps){
+  147 :             H[][it] = eps;
+  148 :         }
+  149 :     }
+  150 :
+  151 :     eta = H + z;
+  152 :     NavierStokes;
+  153 :     u1old = u1; u2old = u2;
+  154 :     HOld = H;
+  155 :     // Hbond2 = 0;
+  156 :     // for(int it = 0; it < neighbor2.n; it++){
+  157 :     //     Hbond2 += HOld[][neighbor2(it) - 1];
+  158 :     // }
+  159 :     // Hbond2 = Hbond2 / neighbor2.n;
+  160 :     //plot([u1, u2], fill = 1, value = 1);
+  161 :     plot(H, fill = 1, value = 1);
+  162 :     // streamline
+  163 :     savesol(foldername + "Th." + string(ii) + ".sol", Th, H); //[u1, u2]
+  164 :         savemesh(Th, foldername + "Th." + string(ii)+".mesh");
+  165 :     ii += 1;
+  166 :     if (ii > 10000){
+  167 :         break;
+  168 :     }
+  169 :
+  170 :         // Xh psi,phi;
+  171 :     // solve streamlines(psi,phi) =
+  172 :     //     int2d(Th)( dx(psi)*dx(phi) + dy(psi)*dy(phi))
+  173 :     //     + int2d(Th)(-phi * (dy(u1)-dx(u2))) + on(1, psi = 0)+on(2, 3, 4, psi=0);
+  174 :     // plot(psi, fill=true, value = 1);
+  175 :
+  176 : }
+  177 : savemesh(Th, foldername + "Th.mesh");
+  178 :  sizestack + 1024 =8512  ( 7488 )
+ 
+  --  mesh:  Nb of Triangles =   3186, Nb of Vertices 1787
+t: 0.01
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -5.76661  max 19.4748
+ kk 2 3 :  Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -3250.66  max 5888
+          min -0.00527167  max 0.789343
+  number of required edges : 0
+ write geo in result3/Th.0.mesh.gmsh
+t: 0.02
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -2.55465  max 19.4824
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -3460.46  max 5888
+          min -0.0168541  max 0.794688
+  number of required edges : 0
+ write geo in result3/Th.1.mesh.gmsh
+t: 0.03
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -2.58564  max 20.1624
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -3614.54  max 5888
+          min -0.025687  max 0.799571
+  number of required edges : 0
+ write geo in result3/Th.2.mesh.gmsh
+t: 0.04
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -2.62142  max 21.5635
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -3700.17  max 5888
+          min -0.0532368  max 0.811182
+  number of required edges : 0
+ write geo in result3/Th.3.mesh.gmsh
+t: 0.05
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -2.66015  max 23.1326
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -3741.89  max 5888
+          min -0.0641683  max 0.811583
+  number of required edges : 0
+ write geo in result3/Th.4.mesh.gmsh
+t: 0.06
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -2.70035  max 29.2948
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -3808.61  max 5888
+          min -0.0696784  max 0.809097
+  number of required edges : 0
+ write geo in result3/Th.5.mesh.gmsh
+t: 0.07
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -2.74085  max 37.9205
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -3890.27  max 5888
+          min -0.0722634  max 0.804229
+  number of required edges : 0
+ write geo in result3/Th.6.mesh.gmsh
+t: 0.08
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -2.78062  max 47.4465
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -3952.44  max 5888
+          min -0.0813115  max 0.802274
+  number of required edges : 0
+ write geo in result3/Th.7.mesh.gmsh
+t: 0.09
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -2.8187  max 57.5441
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -3997.9  max 5888
+          min -0.0910206  max 0.815693
+  number of required edges : 0
+ write geo in result3/Th.8.mesh.gmsh
+t: 0.1
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -2.85431  max 67.4687
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -4029.42  max 5888
+          min -0.0990729  max 0.822653
+  number of required edges : 0
+ write geo in result3/Th.9.mesh.gmsh
+t: 0.11
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -2.88667  max 75.8725
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -4049.2  max 6465.1
+          min -0.108741  max 0.817525
+  number of required edges : 0
+ write geo in result3/Th.10.mesh.gmsh
+t: 0.12
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -2.91477  max 80.7495
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -4058.48  max 7197.85
+          min -0.127475  max 0.783768
+  number of required edges : 0
+ write geo in result3/Th.11.mesh.gmsh
+t: 0.13
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -2.9379  max 79.6052
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -4052.85  max 7622.31
+          min -0.14655  max 0.757284
+  number of required edges : 0
+ write geo in result3/Th.12.mesh.gmsh
+t: 0.14
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -3.73894  max 86.8062
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -4048.91  max 7787.93
+          min -0.165624  max 0.758839
+  number of required edges : 0
+ write geo in result3/Th.13.mesh.gmsh
+t: 0.15
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -7.31673  max 96.121
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -4043.19  max 7733.34
+          min -0.184327  max 0.760063
+  number of required edges : 0
+ write geo in result3/Th.14.mesh.gmsh
+t: 0.16
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -21.8366  max 108.068
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -4079.69  max 7678.92
+          min -0.202524  max 0.760987
+  number of required edges : 0
+ write geo in result3/Th.15.mesh.gmsh
+t: 0.17
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -23.1693  max 117.463
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -4124.11  max 7988.45
+          min -0.220103  max 0.761641
+  number of required edges : 0
+ write geo in result3/Th.16.mesh.gmsh
+t: 0.18
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -47.2113  max 129.279
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -4177.62  max 8103.71
+          min -0.237399  max 0.762056
+  number of required edges : 0
+ write geo in result3/Th.17.mesh.gmsh
+t: 0.19
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -52.2677  max 139.183
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -4211.16  max 8073.98
+          min -0.256026  max 0.762259
+  number of required edges : 0
+ write geo in result3/Th.18.mesh.gmsh
+t: 0.2
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -54.206  max 153.538
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -4251.59  max 8200.63
+          min -0.275108  max 0.76225
+  number of required edges : 0
+ write geo in result3/Th.19.mesh.gmsh
+t: 0.21
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -51.9068  max 171.629
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -4275.64  max 8342.21
+          min -0.300068  max 0.762057
+  number of required edges : 0
+ write geo in result3/Th.20.mesh.gmsh
+t: 0.22
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -51.2848  max 186.607
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -4305.23  max 8296.62
+          min -0.327007  max 0.777763
+  number of required edges : 0
+ write geo in result3/Th.21.mesh.gmsh
+t: 0.23
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -55.5642  max 280.957
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -4261.1  max 8426.12
+          min -0.353747  max 0.794008
+  number of required edges : 0
+ write geo in result3/Th.22.mesh.gmsh
+t: 0.24
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -60.367  max 482.16
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -4224.9  max 8736.78
+          min -0.380684  max 0.868878
+  number of required edges : 0
+ write geo in result3/Th.23.mesh.gmsh
+t: 0.25
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -66.673  max 914.084
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -4176.24  max 8756.19
+          min -0.40992  max 1.08047
+  number of required edges : 0
+ write geo in result3/Th.24.mesh.gmsh
+t: 0.26
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -99.6073  max 1973.27
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -4119.48  max 8411.09
+          min -0.43878  max 1.53251
+  number of required edges : 0
+ write geo in result3/Th.25.mesh.gmsh
+t: 0.27
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -312.679  max 5232.06
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -4057.72  max 8853.51
+          min -1.18486  max 2.73716
+  number of required edges : 0
+ write geo in result3/Th.26.mesh.gmsh
+t: 0.28
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1397.93  max 19483.4
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -4003.59  max 10985.5
+          min -4.14825  max 7.25007
+  number of required edges : 0
+ write geo in result3/Th.27.mesh.gmsh
+t: 0.29
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -12967.6  max 148000
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -4191.3  max 13924.8
+          min -26.7136  max 41.6647
+  number of required edges : 0
+ write geo in result3/Th.28.mesh.gmsh
+t: 0.3
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -3.0041e+006  max 329996
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -4387.62  max 15784.1
+          min -87.5248  max 70.4511
+  number of required edges : 0
+ write geo in result3/Th.29.mesh.gmsh
+t: 0.31
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -391216  max 418401
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -4544.53  max 17727.7
+          min -189.63  max 166.154
+  number of required edges : 0
+ write geo in result3/Th.30.mesh.gmsh
+t: 0.32
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -323045  max 518220
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -4647.49  max 19669.6
+          min -307.5  max 286.194
+  number of required edges : 0
+ write geo in result3/Th.31.mesh.gmsh
+t: 0.33
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -301654  max 633935
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -4660.63  max 21270.8
+          min -436.696  max 433.975
+  number of required edges : 0
+ write geo in result3/Th.32.mesh.gmsh
+t: 0.34
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -276012  max 755379
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -4611.2  max 22312.6
+          min -571.806  max 608.325
+  number of required edges : 0
+ write geo in result3/Th.33.mesh.gmsh
+t: 0.35
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -144913  max 832745
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -4517.13  max 22517.6
+          min -702.707  max 791.783
+  number of required edges : 0
+ write geo in result3/Th.34.mesh.gmsh
+t: 0.36
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -68073.6  max 713388
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -4796.86  max 27324
+          min -973.257  max 885.438
+  number of required edges : 0
+ write geo in result3/Th.35.mesh.gmsh
+t: 0.37
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -225018  max 1.99125e+006
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -5337.35  max 31427
+          min -1301.06  max 1363.65
+  number of required edges : 0
+ write geo in result3/Th.36.mesh.gmsh
+t: 0.38
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -2.0256e+007  max 4.90297e+006
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -4540.12  max 8843.72
+          min -623.874  max 2246.65
+  number of required edges : 0
+ write geo in result3/Th.37.mesh.gmsh
+t: 0.39
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -90341.2  max 1.02537e+007
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -4599.1  max 15591.1
+          min -2420.61  max 5267.56
+  number of required edges : 0
+ write geo in result3/Th.38.mesh.gmsh
+t: 0.4
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.14774e+006  max 7.24912e+007
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -4904.59  max 54309.6
+          min -20607.3  max 25836.7
+  number of required edges : 0
+ write geo in result3/Th.39.mesh.gmsh
+t: 0.41
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -3.48525e+007  max 1.72386e+008
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -4783.64  max 104645
+          min -37620.8  max 35775.2
+  number of required edges : 0
+ write geo in result3/Th.40.mesh.gmsh
+t: 0.42
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -4.75887e+008  max 7.02734e+008
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -81572.1  max 304726
+          min -177066  max 308825
+  number of required edges : 0
+ write geo in result3/Th.41.mesh.gmsh
+t: 0.43
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -2.23089e+009  max 1.86874e+009
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -394928  max 639454
+          min -713597  max 736994
+  number of required edges : 0
+ write geo in result3/Th.42.mesh.gmsh
+t: 0.44
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -2.7142e+010  max 1.65268e+010
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -6.06438e+006  max 6.27841e+006
+          min -4.59857e+006  max 6.75316e+006
+  number of required edges : 0
+ write geo in result3/Th.43.mesh.gmsh
+t: 0.45
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.96006e+011  max 3.11386e+011
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -3.43308e+007  max 1.08563e+008
+          min -5.13634e+007  max 6.81255e+007
+  number of required edges : 0
+ write geo in result3/Th.44.mesh.gmsh
+t: 0.46
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min -1.69127e+011  max 4.65777e+011
+Fatal  error  in Convect (R2) operator: loop  => velocity too high ???? or NaN F. Hecht
+  current line = 152
+Assertion fail : (0)
+        line :4617, in file lgfem.cpp
+Assertion fail : (0)
+        line :4617, in file lgfem.cpp
+ err code 5 ,  mpirank 0
+ try getConsole D:\Study\Projects\XNM\code\XNM3.edp
