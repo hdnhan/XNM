@@ -2,7 +2,7 @@ load "medit"
 
 // load mesh
 string path = "data/";
-string filemesh = "Th3";
+string filemesh = "Th2";
 mesh Th = readmesh(path + filemesh + ".msh");
 //medit("Th", Th);
 
@@ -76,7 +76,7 @@ real tau =  g * n * n;
  
 fespace Xh(Th, P1);
 Xh u1, u2, v1, v2;
-Xh u1old = 0.5, u2old = 0.5, eta, H, phi;
+Xh u1old = 0.5, u2old = 0, eta, H, phi;
 Xh z; z[] = FillZ(z[]);
 //cout << z[] << endl;
  
@@ -87,7 +87,7 @@ macro Grad2(u1, u2) [[dx(u1), dy(u1)], [dx(u2), dy(u2)]] //
 macro Div(u1, u2) (dx(u1) + dy(u2)) //
 
 //declare NS problem
-Xh uUB = 1;
+Xh uUB;
 problem NavierStokes([u1, u2], [v1, v2], solver = Crout) = 
     int2d(Th)((u1 * v1 + u2 * v2) / dt)
     - int2d(Th)(
@@ -96,17 +96,16 @@ problem NavierStokes([u1, u2], [v1, v2], solver = Crout) =
     )
     + int2d(Th)(g * Grad(eta)' * [v1, v2])
     - int2d(Th)(nu / H * Grad(H)' * Grad2(u1, u2) * [v1, v2] - nu * Grad1(u1, u2)' * Grad1(v1, v2))
-    + int2d(Th)((tau * H^(-4.0/3) * (u1old * u1old + u2old * u2old)^(0.5)) * (u1* v1 + u2 * v2))
+    + int2d(Th)((tau * 1/(H * H^(1/3)) * (u1old * u1old + u2old * u2old)^(0.5)) * (u1* v1 + u2 * v2))
     + on(2, u1 = uUB, u2 = 0) + on(1, u1 = 0, u2 = 0);
 
 Xh HOld = 9 - z;
-real Hbond2 = 9;
-real etaUB = 1, etaUB1 = 1, etaUB2 = 1;
+Xh etaUB, etaUB1, etaUB2;
 problem TransportEquation(H, phi) = 
     int2d(Th)(H * phi / dt) 
     //- int2d(Th)(convect([u1,u2], -dt, HOld) * phi / dt) + int2d(Th)(H * Div(u1, u2) * phi)
     - int2d(Th)(HOld * phi / dt) + int2d(Th)(Grad(H)' * [u1, u2] * phi + H * Div(u1, u2) * phi)
-    + on(2, H = etaUB) + on(1, H = 0) + on(3, H = etaUB1) + on(4, H = etaUB2);
+    + on(2, H = etaUB - z) + on(1, H = 0) + on(3, H = etaUB1 - z) + on(4, H = etaUB2 - z);
 
 
 //initial
@@ -137,28 +136,25 @@ for(int i = 0; i < Th.nbe; i++){
 //cout << points2 << endl;
 //cout << leng2 << endl;
 //cout << Th.hmax << endl;
-int ii = 0;
+int cnt = 0;
 real[int] h(nbe2);
 real eps = 1e-6;
-ofstream writefile("velocity.txt");
 string foldername = "result4/";
 for(real t = dt; t < T; t += dt){
     cout << "t: " << t << endl;
     real[int] QHH = InterpolationData(t);
-    etaUB = QHH(1);
+    etaUB = QHH(1); // Th4
     etaUB1 = QHH(2);
     etaUB2 = QHH(3);
     Xh uOnBoundary2 = 0;
-    // cout << "HOld: "<< HOld[].min << " +-+ " << HOld[].max << endl; 
     for(int it = 0; it < Th.nv; it++){
-        if(HOld[][it] < eps){
+        if(abs(HOld[][it]) < eps){
             HOld[][it] = eps;
         }
     }
     TransportEquation;
-    // cout << "HOld: "<< HOld[].min << " +-+ " << HOld[].max << endl;
     for(int it = 0; it < Th.nv; it++){
-        if(H[][it] < eps){
+        if(abs(H[][it]) < eps){
             H[][it] = eps;
         }
     }
@@ -179,26 +175,25 @@ for(real t = dt; t < T; t += dt){
     NavierStokes;
     u1old = u1; u2old = u2;
     HOld = H;
-    // Hbond2 = 0;
-    // for(int it = 0; it < neighbor2.n; it++){
-    //     Hbond2 += HOld[][neighbor2(it) - 1];
-    // }
-    // Hbond2 = Hbond2 / neighbor2.n;
+
+    /* 
+    // TH2:
+    real Hbond2 = 0;
+    for(int it = 0; it < neighbor2.n; it++){
+        Hbond2 += HOld[][neighbor2(it) - 1];
+    }
+    Hbond2 = Hbond2 / neighbor2.n;
+    etaUB = Hbond2;
+    */
+
     //plot([u1, u2], fill = 1, value = 1);
     plot(H, fill = 1, value = 1);
-    // streamline
-    savesol(foldername + "Th." + string(ii) + ".sol", Th, H); //[u1, u2]
-	savemesh(Th, foldername + "Th." + string(ii)+".mesh");
-    ii += 1;
-    if (ii > 10000){
-        break;
-    }
-
-	// Xh psi,phi;
-    // solve streamlines(psi,phi) = 
-    //     int2d(Th)( dx(psi)*dx(phi) + dy(psi)*dy(phi)) 
-    //     + int2d(Th)(-phi * (dy(u1)-dx(u2))) + on(1, psi = 0)+on(2, 3, 4, psi=0);
-    // plot(psi, fill=true, value = 1);
     
+    savesol(foldername + "ThH." + string(cnt) + ".sol", Th, H);
+	savemesh(Th, foldername + "ThH." + string(cnt)+".mesh");
+    savesol(foldername + "ThU." + string(cnt) + ".sol", Th, H);
+	savemesh(Th, foldername + "ThU." + string(cnt)+".mesh");
+    cnt += 1;
 }
-savemesh(Th, foldername + "Th.mesh");
+savemesh(Th, foldername + "ThU.mesh");
+savemesh(Th, foldername + "ThH.mesh");

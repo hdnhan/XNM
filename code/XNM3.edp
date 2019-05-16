@@ -84,7 +84,6 @@ problem NavierStokes([u1, u2], [v1, v2], solver = Crout) =
     + on(2, u1 = uUB, u2 = 0) + on(1, u1 = 0, u2 = 0);
 
 Xh HOld = 9 - z;
-real Hbond2 = 9;
 real etaUB = 1, etaUB1 = 1, etaUB2 = 1;
 problem TransportEquation(H, phi) = 
     int2d(Th)(H * phi / dt) 
@@ -130,7 +129,7 @@ for(real t = dt; t < T; t += dt){
     cout << "t: " << t << endl;
     real[int] QHH = InterpolationData(t);
     uUB = QHH(0);
-    etaUB = QHH(1);
+    etaUB = QHH(1); // TH3
     etaUB1 = QHH(2);
     etaUB2 = QHH(3);
     Xh uOnBoundary2 = 0;
@@ -152,12 +151,15 @@ for(real t = dt; t < T; t += dt){
     NavierStokes;
     u1old = u1; u2old = u2;
     HOld = H;
-    // Hbond2 = 0;
-    // for(int it = 0; it < neighbor2.n; it++){
-    //     Hbond2 += HOld[][neighbor2(it) - 1];
-    // }
-    // Hbond2 = Hbond2 / neighbor2.n;
-    //plot([u1, u2], fill = 1, value = 1);
+    /* 
+    // TH1:
+    real Hbond2 = 0;
+    for(int it = 0; it < neighbor2.n; it++){
+        Hbond2 += HOld[][neighbor2(it) - 1];
+    }
+    Hbond2 = Hbond2 / neighbor2.n;
+    etaUB = Hbond2;
+    */
     plot(H, fill = 1, value = 1);
     // streamline
     savesol(foldername + "Th." + string(ii) + ".sol", Th, H); //[u1, u2]
