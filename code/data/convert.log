@@ -8,8 +8,8 @@
  
   --  mesh:  Nb of Triangles =  12673, Nb of Vertices 6724
   number of required edges : 0
-times: compile 0.07s, execution 0.546s,  mpirank:0
+times: compile 0.068s, execution 0.535s,  mpirank:0
  ######## We forget of deleting   58 Nb pointer,   0Bytes  ,  mpirank 0, memory leak =0
  CodeAlloc : nb ptr  2730,  size :373040 mpirank: 0
 Ok: Normal End
- try getConsole D:\Study\Projects\XNM\codes\mesh\convert.edp
+ try getConsole D:\Study\Projects\XNM\code\data\convert.edp

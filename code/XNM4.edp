@@ -1,7 +1,7 @@
 load "medit"
 
 string path = "data/";
-string filemesh = "Th2";
+string filemesh = "Th3";
 mesh Th = readmesh(path + filemesh + ".msh");
 //medit("Th", Th);
 
@@ -53,13 +53,13 @@ func real[int] InterpolationData(real t){
 
 func real FuncOfH(real h){
     //return 1;
-    return h;
+    return abs(h);
 }
 
 func real FindParameterK(real Q, real[int] &h, real[int] &l){
     real sumArea = 0;
     for (int i = 0; i < h.n; i++){
-        sumArea += FuncOfH(h(i)) * h(i) * l(i);
+        sumArea += FuncOfH(h(i)) * abs(h(i)) * l(i);
     }
     return Q / sumArea;
 }
@@ -136,10 +136,11 @@ for(real t = dt; t < T; t += dt){
     etaUB = BoundData(1); // Th4
     etaUB1 = BoundData(2);
     etaUB2 = BoundData(3);
+    cout << "BoundData: " << BoundData << endl;
     Xh uOnBoundary2 = 0;
     TransportEquation;
     for(int it = 0; it < Th.nv; it++){
-        if(abs(H[][it]) < eps){
+        if(H[][it] < eps){
             H[][it] = eps;
         }
     }
@@ -147,11 +148,14 @@ for(real t = dt; t < T; t += dt){
     for(int i = 0; i < nbe2; i++){
         H2mean(i) = (H[](points2(i, 0)) + H[](points2(i, 1))) / 2;
     }
-
+    cout << "H2mean: " << H2mean << endl;
     real k = FindParameterK(BoundData(0), H2mean, leng2);
+    cout << "k: " << k << endl;
     for(int i = 0; i < H2mean.n; i++){
         uOnBoundary2[](points2(i, 0)) =  k * FuncOfH(H2mean(i));
         uOnBoundary2[](points2(i, 1)) =  k * FuncOfH(H2mean(i));
+        //cout << "uOnBoundary2: " << points2(i, 0) << " " << uOnBoundary2[](points2(i, 0)) << endl;
+        //cout << "uOnBoundary2: " << points2(i, 1) << " " << uOnBoundary2[](points2(i, 1)) << endl;
     } 
     
     eta = H + zh;

@@ -1,0 +1,92 @@
+load "medit"
+
+string path = "data/";
+string filemesh = "Th2";
+mesh Th = readmesh(path + filemesh + ".msh");
+medit("Th", Th);
+
+int NoVMesh; // Number of Vertices Mesh
+if (filemesh == "Th1"){
+    NoVMesh = 503;
+}else if (filemesh == "Th2"){
+    NoVMesh = 1787;
+}else{
+    NoVMesh = 6724;
+}
+
+real[int, int] hz(NoVMesh, 4);
+ifstream filemeshZ(path + filemesh + "CoZ.mesh");
+filemeshZ >> hz;
+
+real[string] mapz;
+for (int i = 0; i < hz.n; i++){
+    mapz[string(hz(i, 0)) + " " + string(hz(i, 1))] = hz(i, 2);
+}
+
+func real[int] FillZ(real[int] mat){
+    for (int i = 0; i < Th.nv; i++){
+        mat(i) = mapz[string(Th(i).x) + " " + string(Th(i).y)];
+    }
+    return mat;
+}
+
+real[int, int] data(503, 4);
+ifstream filedata(path + "SLMIKE21-3.txt");
+filedata >> data;
+
+func real[int] InterpolationData(real t){
+    // t: time (unit: second)
+    real T = 3600;
+    int n = t /  T;
+    real delt = t / T - n;
+    real[int] res(4);
+    res(0) = data(n, 0) * delt + data(n + 1, 0) * (1 - delt);
+    res(1) = data(n, 1) * delt + data(n + 1, 1) * (1 - delt);
+    res(2) = data(n, 2) * delt + data(n + 1, 2) * (1 - delt);
+    res(3) = data(n, 3) * delt + data(n + 1, 3) * (1 - delt);
+    return res; 
+}
+
+real dt = 1e-2, nu = 2.67 * 1e1, g = 9.81, rho = 1000, n = 0.025, T = 9999999;
+real tau =  g * n * n;
+ 
+fespace Xh(Th, P1);
+Xh u1, u2, v1, v2;
+Xh u1old = 0.5, u2old = 0, eta, H, phi;
+Xh zh; zh[] = FillZ(zh[]);
+
+macro Grad(u) [dx(u), dy(u)] //
+macro Grad1(u1, u2) [dx(u1), dy(u1), dx(u2), dy(u2)] //
+macro Grad2(u1, u2) [[dx(u1), dy(u1)], [dx(u2), dy(u2)]] //
+macro Div(u1, u2) (dx(u1) + dy(u2)) //
+
+
+Xh uUB;
+
+problem NavierStokes([u1, u2], [v1, v2], solver = Crout) = 
+    int2d(Th)((u1 * v1 + u2 * v2) / dt)
+    - int2d(Th)(
+          convect([u1old, u2old], -dt, u1old) * v1 / dt 
+        + convect([u1old, u2old], -dt, u2old) * v2 / dt
+    )
+    //+ int2d(Th)(g * Grad(eta)' * [v1, v2])
+    //- int2d(Th)(g * eta * Div(v1, v2))
+    - int2d(Th)(nu / H * Grad(H)' * Grad2(u1, u2) * [v1, v2] - nu * Grad1(u1, u2)' * Grad1(v1, v2))
+    //+ int2d(Th)((tau * 1/H^(4/3) * (u1old * u1old + u2old * u2old)^(0.5)) * (u1 * v1 + u2 * v2))
+    + on(2, u1 = uUB, u2 = 0) + on(1, u1 = 0, u2 = 0);
+
+
+for(real t = dt; t < T; t += dt){
+    cout << endl << "t: " << t << endl;
+    real[int] BoundData = InterpolationData(t);
+      
+    eta = 9;
+    H = 9 - zh;
+    uUB = BoundData(0);
+    NavierStokes;
+    u1old = u1; u2old = u2;
+
+    plot([u1, u2], fill = 1, value = 1);
+    //plot(H, fill = 1, value = 1);
+
+}

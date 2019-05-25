@@ -1,0 +1,51 @@
+real Lx = 10, Ly = 1;
+mesh Th = square(Lx * 10, Ly * 10, [Lx * x, Ly * y]);
+
+fespace Xh(Th, P1);
+Xh zh = 0.01 * (x + Ly) * y * (y - Ly);
+
+Xh uxexac = 0.5, uyexac = 0;
+Xh Hexac = 1;
+
+
+real dt = 1e-2, nu = 1, g = 9.81, n = 0.025, T = 9999999; //nu = 2.67 * 1e-2
+real tau =  g * n * n;
+Xh uxold = 0.5, uyold = 0, eta, H, Hold, phi;
+Xh ux, uy, vx, vy;
+
+
+macro Grad(u) [dx(u), dy(u)] //
+macro Grad1(ux, uy) [dx(ux), dy(ux), dx(uy), dy(uy)] //
+macro Grad2(ux, uy) [[dx(ux), dy(ux)], [dx(uy), dy(uy)]] //
+macro Div(ux, uy) (dx(ux) + dy(uy)) //
+
+
+problem NavierStokes([ux, uy], [vx, vy], solver = Crout) = 
+    int2d(Th)((ux * vx + uy * vy) / dt)
+    - int2d(Th)(
+          convect([uxold, uyold], -dt, uxold) * vx / dt 
+        + convect([uxold, uyold], -dt, uyold) * vy / dt
+    )
+    - int2d(Th)(g * eta * Div(vx, vy))
+    - int2d(Th)(nu / H * Grad(H)' * Grad2(ux, uy) * [vx, vy] - nu * Grad1(ux, uy)' * Grad1(vx, vy))
+    + int2d(Th)(tau * 1/H^(4/3) * (uxold * uxold + uyold * uyold)^(0.5) * (ux * vx + uy * vy))
+    - int2d(Th)(tau * 1/Hexac^(4/3) * (uxexac * uxexac + uyexac * uxexac)^(0.5) * (uxexac * vx + uyexac * vy))
+    + on(4, ux = uxexac, uy = 0) + on(1, 4, ux = 0, uy = 0);
+
+
+problem TransportEquation(H, phi) = 
+    int2d(Th)(H * phi / dt) - int2d(Th)(Hold * phi / dt)
+    - int2d(Th)(H * [ux, uy]' * Grad(phi))
+    + on(4, H = Hexac);
+
+for(real t = dt; t < T; t += dt){
+    //TransportEquation;
+    H = Hexac;
+    eta = H + zh;
+    NavierStokes;
+    Hold = H;
+    uxold = ux; uyold = uy;
+
+    //plot([ux, uy], fill = 1, value = 1);
+    plot(H, fill = 1, value = 1);
+}

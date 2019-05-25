@@ -6,16 +6,12 @@ mesh Th = readmesh(path + filemesh + ".msh");
 //medit("Th", Th);
 
 int NoVMesh; // Number of Vertices Mesh
-// int[int] neighbor2;
 if (filemesh == "Th1"){
     NoVMesh = 503;
-    // neighbor2 = [498, 494, 495, 497, 501];
 }else if (filemesh == "Th2"){
     NoVMesh = 1787;
-    // neighbor2 = [2, 9, 18, 7, 21, 22, 14, 5];
 }else{
     NoVMesh = 6724;
-    // neighbor2 = [6717, 6718, 6714, 6703, 6698, 6681, 6677, 6676, 6675, 6674, 6673, 6687, 6686, 6704, 6715, 6721];
 }
 
 real[int, int] hz(NoVMesh, 4);
@@ -51,69 +47,45 @@ func real[int] InterpolationData(real t){
     return res; 
 }
 
-real dt = 0.1, nu = 2.67 * 1e-4, g = 9.81, rho = 100, n = 0.025, T = 9999999;
+real dt = 1e-2, nu = 2.67 * 1e-4, g = 9.81, rho = 1000, n = 0.025, T = 9999999;
 real tau =  g * n * n;
  
 fespace Xh(Th, P1);
-Xh u1, u2, v1, v2;
-Xh u1old = 0.5, u2old = 0, eta, H, phi;
+Xh ux, uy, vx, vy;
+Xh uxold = 0.5, uyold = 0, eta, H, phi;
 Xh zh; zh[] = FillZ(zh[]);
 
 macro Grad(u) [dx(u), dy(u)] //
-macro Grad1(u1, u2) [dx(u1), dy(u1), dx(u2), dy(u2)] //
-macro Grad2(u1, u2) [[dx(u1), dy(u1)], [dx(u2), dy(u2)]] //
-macro Div(u1, u2) (dx(u1) + dy(u2)) //
+macro Grad1(ux, uy) [dx(ux), dy(ux), dx(uy), dy(uy)] //
+macro Grad2(ux, uy) [[dx(ux), dy(ux)], [dx(uy), dy(uy)]] //
+macro Div(ux, uy) (dx(ux) + dy(uy)) //
 
 
 Xh uUB;
-problem NavierStokes([u1, u2], [v1, v2], solver = Crout) = 
-    int2d(Th)((u1 * v1 + u2 * v2) / dt)
-    - int2d(Th)(
-          convect([u1old, u2old], -dt, u1old) * v1 / dt 
-        + convect([u1old, u2old], -dt, u2old) * v2 / dt
-    )
-    + int2d(Th)(g * Grad(eta)' * [v1, v2])
-    - int2d(Th)(nu / H * Grad(H)' * Grad2(u1, u2) * [v1, v2] - nu * Grad1(u1, u2)' * Grad1(v1, v2))
-    + int2d(Th)((tau * 1/H^(4/3) * (u1old * u1old + u2old * u2old)^(0.5)) * (u1* v1 + u2 * v2))
-    + on(2, u1 = uUB, u2 = 0) + on(1, u1 = 0, u2 = 0);
 
-Xh HOld = 9 - zh;
+problem NavierStokes([ux, uy], [vx, vy], solver = Crout) = 
+    int2d(Th)((ux * vx + uy * vy) / dt)
+    - int2d(Th)(
+          convect([uxold, uyold], -dt, uxold) * vx / dt 
+        + convect([uxold, uyold], -dt, uyold) * vy / dt
+    )
+    //+ int2d(Th)(g * Grad(eta)' * [vx, vy])
+    - int2d(Th)(g * eta * Div(vx, vy))
+    - int2d(Th)(nu / H * [vx, vy]' * Grad2(ux, uy) * Grad(H) - nu * Grad1(ux, uy)' * Grad1(vx, vy))
+    + int2d(Th)((tau * 1/H^(4/3) * (uxold * uxold + uyold * uyold)^(0.5)) * (ux * vx + uy * vy))
+    + on(2, ux = uUB, uy = 0) + on(1, ux = 0, uy = 0);
+
+Xh Hold = 9 - zh;
 Xh etaUB, etaUB1, etaUB2;
 problem TransportEquation(H, phi) = 
-    int2d(Th)(H * phi / dt)
-    - int2d(Th)(HOld * phi / dt) + int2d(Th)(Grad(H)' * [u1, u2] * phi + H * Div(u1, u2) * phi)
-    + on(2, H = etaUB - zh) + on(1, H = 0) + on(3, H = etaUB1 - zh) + on(4, H = etaUB2 - zh);
+    int2d(Th)(H * phi / dt) - int2d(Th)(Hold * phi / dt) 
+    //+ int2d(Th)(Grad(H)' * [ux, uy] * phi + H * Div(ux, uy) * phi)
+    - int2d(Th)(H * [ux, uy]' * Grad(phi))
+    + on(2, H = etaUB - zh) + on(1, H = 0);// + on(3, H = etaUB1 - zh) + on(4, H = etaUB2 - zh);
 
 
-int nbe2 = 0; // number of boundary element
-int nlabel = 2;
-for(int i = 0; i < Th.nbe; i++){
-    if(Th.be(i)[0].label == nlabel){
-        if(Th.be(i)[1].label == nlabel){
-            nbe2 += 1;
-        }
-    }
-}
 
-int[int, int] points2(nbe2, 2);
-real[int] leng2(nbe2);
-int j = 0;
-for(int i = 0; i < Th.nbe; i++){
-    if(Th.be(i)[0].label == nlabel){
-        if(Th.be(i)[1].label == nlabel){
-            leng2(j) = sqrt((Th.be(i)[0].x - Th.be(i)[1].x)^2 + (Th.be(i)[0].y - Th.be(i)[1].y)^2);
-            points2(j, 0) = Th.be(i)[0];
-            points2(j, 1) = Th.be(i)[1];
-            j += 1;
-        }
-    }
-}
-//cout << nbe2 << endl;
-//cout << points2 << endl;
-//cout << leng2 << endl;
-//cout << Th.hmax << endl;
 int cnt = 0;
-real[int] H2mean(nbe2);
 real eps = 1e-6;
 string foldername = "result4/";
 for(real t = dt; t < T; t += dt){
@@ -132,12 +104,19 @@ for(real t = dt; t < T; t += dt){
       
     eta = H + zh;
     uUB = BoundData(0);
-    cout << "min uUB: " << uUB[].min << " " << uUB[].max << endl;
+    cout << "u from file: "  << BoundData(0) << endl;
+    //cout << "min uUB: " << uUB[].min << " " << uUB[].max << endl;
     NavierStokes;
-    u1old = u1; u2old = u2;
-    HOld = H;
+    for(int it = 0; it < Th.nv; it++){
+        if(H[][it] < 0){
+            ux[][it] = 0;
+            uy[][it] = 0;
+        }
+    }
+    uxold = ux; uyold = uy;
+    Hold = H;
 
-    //plot([u1, u2], fill = 1, value = 1);
+    //plot([ux, uy], fill = 1, value = 1);
     plot(H, fill = 1, value = 1);
     
     savesol(foldername + "ThH." + string(cnt) + ".sol", Th, H);

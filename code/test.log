@@ -1,0 +1,20 @@
+-- FreeFem++ v  3.610001 (date jeu. 12 juil. 2018 15:05:23)
+ Load: lg_fem lg_mesh lg_mesh3 eigenvalue
+    1 : //string path = "data/";
+    2 : string path = "";
+    3 : string filemesh = "Th1";
+    4 : mesh Th = readmesh(path + filemesh + ".msh");
+    5 : fespace Vh(Th,P1); Vh u,v;
+    6 : Vh kappa=1+2*(x<-1)*(x>-2)*(y<3)*(y>-3);
+    7 : solve a(u,v)= int2d(Th)(kappa*(dx(u)*dx(v)+dy(u)*dy(v)))+on(1, 2,u=20)+on(3, 4,u=60);
+    8 : plot(u,wait=true, value=true, fill=true); sizestack + 1024 =1664  ( 640 )
+ 
+  --  mesh:  Nb of Triangles =    811, Nb of Vertices 503
+ Warning: -- Your set of boundary condition is incompatible with the mesh label.
+  -- Solve :
+          min 20  max 20
+times: compile 0.095s, execution 0.038s,  mpirank:0
+ ######## We forget of deleting   54 Nb pointer,   0Bytes  ,  mpirank 0, memory leak =0
+ CodeAlloc : nb ptr  2818,  size :377424 mpirank: 0
+Ok: Normal End
+ try getConsole D:\Study\Projects\XNM\code\test.edp

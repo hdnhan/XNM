@@ -47,13 +47,14 @@ int ic0 = be(0), ic1 = be(1) - 1;
 macro GG(i)
 border G#i(t = 0, 1){
 	P = Curve(Curves, be(2 * i), be(2 * i + 1) - 1, t);
-	label = i + 1 + (abs(x - 7.56) < 0.1) + 2 * (abs(y - 7.59) < 0.1) + 3 * (abs(x - 960.4) < 0.1);
+	label = i + 1;
 }
 real lg#i = Curves(2, be(2 * i + 1) - 1); //
 GG(0) GG(1) //GG(2) //GG(3)// number of closing curve
 real hh = -20;
 //plot(G0(lg0/hh) + G1(lg1/hh));
 // + (abs(x - 7.56) < 0.05) + 2 * (abs(y - 7.59) < 0.03) + 3 * (abs(x - 960.4) < 0.05);
+//+ (abs(x - 7.56) < 0.1) + 2 * (abs(y - 7.59) < 0.1) + 3 * (abs(x - 960.4) < 0.1);
 func bord = G0(lg0/hh);
 mesh Th = buildmesh(bord);
 //plot(Th, wait = 1);
@@ -70,8 +71,8 @@ func newlabel = (label == 1) ? 2 : 0;
 Th = change(Th, flabel = newlabel);
 
 //plot(Th, wait = true);
-//medit("test", Th);
-savemesh (Th ,"Th1.mesh");
+medit("test", Th);
+savemesh (Th ,"Th1.msh");
 
 /* 
 func bord = G0(lg0/hh);//+G1(lg1/hh)+G2(lg2/hh)+G3(lg3/hh);
