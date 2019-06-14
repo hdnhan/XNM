@@ -1,293 +1,187 @@
--- FreeFem++ v  3.610001 (date jeu. 12 juil. 2018 15:05:23)
- Load: lg_fem lg_mesh lg_mesh3 eigenvalue
-    1 : load "medit"(load: loadLibary C:\Program Files (x86)\FreeFem++\\.\medit = 0)
+ 
+D:\Study\Projects\XNM\code>XNM3.edp
+ 
+D:\Study\Projects\XNM\code>-- FreeFem++ v  3.610001 (date jeu. 12 juil. 2018 15:05:23)
+ Load: lg_fem lg_mesh lg_mesh3 eigenvalue 
+    1 : load "medit"(load: loadLibary C:\Progra3m Files (x86)\FreeFem++\\.\medit = 0)
     2 :
     3 : string path = "data/";
     4 : int nthfile = 3;
     5 : string filemesh = "Th" + nthfile;
-    6 : mesh Thold = readmesh(path + filemesh + ".msh");
-    7 : //medit("Thold", Thold);
-    8 :
-    9 : int[int] NoVMesh = [515, 1802, 6718];
-   10 : real[int, int] hz(NoVMesh[nthfile - 1], 3);
-   11 : ifstream filemeshZ(path + filemesh + "CoZ.txt");
-   12 : filemeshZ >> hz;
-   13 :
-   14 : real[string] mapz;
-   15 : for (int i = 0; i < hz.n; i++){
-   16 :     mapz[string(hz(i, 0)) + " " + string(hz(i, 1))] = hz(i, 2);
-   17 : }
-   18 :
-   19 : func real[int] FillZ(real[int] mat){
-   20 :     for (int i = 0; i < Thold.nv; i++){
-   21 :         mat(i) = mapz[string(Thold(i).x) + " " + string(Thold(i).y)];
-   22 :     }
-   23 :     return mat;
-   24 : }
-   25 :
-   26 : real[int, int] data(503, 4);
-   27 : ifstream filedata(path + "SLMIKE21-3.txt");
-   28 : filedata >> data;
-   29 :
-   30 : func real[int] InterpolationData(real t){
-   31 :     // t: time (unit: second)
-   32 :     real T = 3600;
-   33 :     int n = t /  T;
-   34 :     real delt = t / T - n;
-   35 :     real[int] res(4);
-   36 :     res(0) = data(n, 0) * delt + data(n + 1, 0) * (1 - delt);
-   37 :     res(1) = data(n, 1) * delt + data(n + 1, 1) * (1 - delt);
-   38 :     res(2) = data(n, 2) * delt + data(n + 1, 2) * (1 - delt);
-   39 :     res(3) = data(n, 3) * delt + data(n + 1, 3) * (1 - delt);
-   40 :     return res;
-   41 : }
-   42 :
-   43 : real dt = 1e-2, nu = 2.67 * 1e-4, g = 9.81, rho = 1000, n = 0.025, T = 9999999;
-   44 : real tau =  g * n * n;
-   45 : real eps = 0.05;
-   46 :
-   47 : macro Grad(u) [dx(u), dy(u)]  )   [dx(u), dy(u)] //
-   48 : macro Grad1(ux, uy) [dx(ux), dy(ux), dx(uy), dy(uy)]  )   [dx(ux), dy(ux), dx(uy), dy(uy)] //
-   49 : macro Grad2(ux, uy) [[dx(ux), dy(ux)], [dx(uy), dy(uy)]]  )   [[dx(ux), dy(ux)], [dx(uy), dy(uy)]] //
-   50 : macro Div(ux, uy) (dx(ux) + dy(uy))  )   (dx(ux) + dy(uy)) //
+    6 : mesh Th = readmesh(path + filemesh + ".msh");
+    7 :
+    8 : int[int] NoVMesh = [515, 1802, 6718];
+    9 : real[int, int] hz(NoVMesh[nthfile - 1], 3);
+   10 : ifstream filemeshZ(path + filemesh + "CoZ.txt");
+   11 : filemeshZ >> hz;
+   12 :
+   13 : real[string] mapz;
+   14 : for (int i = 0; i < hz.n; i++){
+   15 :     mapz[string(hz(i, 0)) + " " + string(hz(i, 1))] = hz(i, 2);
+   16 : }
+   17 :
+   18 : func real[int] FillZ(real[int] mat){
+   19 :     for (int i = 0; i < Th.nv; i++){
+   20 :         mat(i) = mapz[string(Th(i).x) + " " + string(Th(i).y)];
+   21 :     }
+   22 :     return mat;
+   23 : }
+   24 :
+   25 : real[int, int] data(503, 4);
+   26 : ifstream filedata(path + "SLMIKE21-3.txt");
+   27 : filedata >> data;
+   28 :
+   29 : func real[int] InterpolationData(real t){
+   30 :     // t: time (unit: second)
+   31 :     real T = 3600;
+   32 :     int n = t /  T;
+   33 :     real delt = t / T - n;
+   34 :     real[int] res(4);
+   35 :     res(0) = data(n, 0) * delt + data(n + 1, 0) * (1 - delt);
+   36 :     res(1) = data(n, 1) * delt + data(n + 1, 1) * (1 - delt);
+   37 :     res(2) = data(n, 2) * delt + data(n + 1, 2) * (1 - delt);
+   38 :     res(3) = data(n, 3) * delt + data(n + 1, 3) * (1 - delt);
+   39 :     return res;
+   40 : }
+   41 :
+   42 : real dt = 1e-2, nu = 2.67 * 1e-4, g = 9.81, rho = 1000, n = 0.025, T = 9999999;
+   43 : real tau =  g * n * n;
+   44 : real eps = 0.05;
+   45 :
+   46 : macro Grad(u) [dx(u), dy(u)]  )   [dx(u), dy(u)] //
+   47 : macro Grad1(ux, uy) [dx(ux), dy(ux), dx(uy), dy(uy)]  )   [dx(ux), dy(ux), dx(uy),3 dy(uy)] //
+   48 : macro Grad2(ux, uy) [[dx(ux), dy(ux)], [dx(uy), dy(uy)]]  )   [[dx(ux), dy(ux)], [3dx(uy), dy(uy)]] //
+   49 : macro Div(ux, uy) (dx(ux) + dy(uy))  )   (dx(ux) + dy(uy)) //
+   50 :
    51 :
-   52 :
-   53 : fespace Xhold(Thold, P1);
-   54 : Xhold zh; zh[] = FillZ(zh[]);
-   55 : Xhold H, phi, Hold = 9 - zh;
-   56 : Xhold uxold = 0.5, uyold = 0;
-   57 : Xhold ux, uy;
-   58 :
-   59 : int cnt = 0;
-   60 : string foldername = "result3/";
-   61 :
-   62 : for(real t = dt; t <= T; t += dt){
-   63 :     cout << "t: " << t << endl;
-   64 :     real[int] BoundData = InterpolationData(t);
-   65 :     Xhold etaUB = BoundData(1);
-   66 :     Xhold etaUB1 = BoundData(2);
-   67 :     Xhold etaUB2 = BoundData(3);
-   68 :
-   69 :     solve TransportEquation(H, phi) =
-   70 :         int2d(Thold)(H * phi / dt) - int2d(Thold)(Hold * phi / dt)
-   71 :         //+ int2d(Th)(Grad(H)' * [ux, uy] * phi + H * Div(ux, uy) * phi)
-   72 :         - int2d(Thold)(H * [ux, uy]' * Grad(phi)    [dx(phi), dy(phi)] )
-   73 :         + on(2, H = etaUB - zh) + on(1, H = 0);// + on(3, H = etaUB1 - zh) + on(4, H = etaUB2 - zh);
-   74 :
-   75 :     mesh Thwet = trunc(Thold, H >= eps );
-   76 :     mesh Thdry = Thwet;
-   77 :     // mesh Thdry = trunc(Thold, H <= eps, split = 3, label = 6);
-   78 :     // medit("test", Thwet);
-   79 :
-   80 :     ofstream wf(foldername + "Thdry.msh");
-   81 :     wf.fixed;
-   82 :     wf << Thdry.nv << " " << Thdry.nt << " " << Thdry.nbe << endl;
-   83 :     for(int i = 0; i < Thdry.nv; i++){
+   52 : fespace Xh(Th, P1);
+   53 : fespace Hh(Th, P1dc);
+   54 : Xh zh; zh[] = FillZ(zh[]);
+   55 : Hh H, phi, Hold = 9 - zh;
+   56 : Xh ux = 0.5, uy = 0.0;
+   57 :
+   58 : int cnt = 0;
+   59 : string foldername = "result3/";
+   60 :
+   61 : for(real t = dt; t <= dt; t += dt){
+   62 :     cout << "t: " << t << endl;
+   63 :     real[int] BoundData = InterpolationData(t);
+   64 :     Xh etaUB = BoundData(1);
+   65 :     Xh etaUB1 = BoundData(2);
+   66 :     Xh etaUB2 = BoundData(3);
+   67 :
+   68 :     real al = 0.5;
+   69 :     macro n() (N.x * ux + N.y * uy)  (N.x * ux + N.y * uy) //
+   70 :     solve TransportEquation(H, phi) =
+   71 :         int2d(Th)((H/dt + ux * dx(H) + uy * dy(H) + H * Div(ux, uy)     (dx(ux) +
+3dy( uy)) ) * phi)
+   72 :         + intalledges(Th)((1 - nTonEdge) * phi * (al * abs(n         (N.x * ux + N3.y * uy) ) - n         (N.x * ux + N.y * uy) /2) *  jump(H))
+   73 :         - int1d(Th, 2)((n         (N.x * ux + N.y * uy)  < 0) * abs(n         (N.x3 * ux + N.y * uy) ) * H * phi)
+   74 :         - int2d(Th)(Hold * phi / dt)
+   75 :         + int1d(Th, 2)((n         (N.x * ux + N.y * uy)  < 0) * abs(n         (N.x3 * ux + N.y * uy) ) * (etaUB - zh) * phi);
+   76 :
+   77 :     mesh Thwet = trunc(Th, H >= eps);
+   78 :
+   79 :     ofstream wf(foldername + "Thwet.msh");
+   80 :     wf.fixed;
+   81 :     wf << Thwet.nv << " " << Thwet.nt << " " << Thwet.nbe << endl;
+   82 :
+   83 :     for(int i = 0; i < Thwet.nv; i++){
    84 :         int check = 0;
-   85 :         for (int j = 0; j < Thdry.nbe; j++){
-   86 :             if ((i == Thdry.be(j)[0] || i == Thdry.be(j)[1]) && (Thdry(i).label == 0 || Thdry(i).label == 0)){
+   85 :         for (int j = 0; j < Thwet.nbe; j++){
+   86 :             if ((i == Thwet.be(j)[0] || i == Thwet.be(j)[1]) && (Thwet(i).label ==3 0)){
    87 :                 check = 1;
    88 :                 break;
    89 :             }
    90 :         }
    91 :         if (check == 1){
-   92 :             wf << Thdry(i).x << " " << Thdry(i).y << " " << 1 << endl;
-   93 :         }else{
-   94 :             wf << Thdry(i).x << " " << Thdry(i).y << " " << Thdry(i).label << endl;
+   92 :             wf << Thwet(i).x << " " << Thwet(i).y << " " << 1 << endl;
+   93 :         } else {
+   94 :             wf << Thwet(i).x << " " << Thwet(i).y << " " << Thwet(i).label << endl3;
    95 :         }
    96 :     }
-   97 :     for (int i = 0; i < Thdry.nt; i++){
-   98 :         wf << Thdry[i][0] + 1 << " " << Thdry[i][1]  + 1 << " " << Thdry[i][2]  + 1 << " " << Thdry[i].label <<
-È™ßt±Ë?endl;
-   99 :     }
-  100 :     for(int i = 0; i < Thdry.nbe; i++){
-  101 :         wf << Thdry.be(i)[0] + 1 << " " << Thdry.be(i)[1] + 1 << " " << Thdry.be(i).label <<  endl;
-  102 :     }
-  103 :     wf.flush;
-  104 :
-  105 :     Thdry = readmesh(foldername + "Thdry.msh");
-  106 :     // medit("test", Thdry);
-  107 :     mesh Thnew = Thdry;
-  108 :     // Thnew = trunc(Thnew, H > 0.001*eps);
-  109 :     // medit("Thnew", Thnew);
-  110 :
-  111 :     fespace Xhnew(Thnew, P1);
-  112 :     Xhnew ux, uy, vx, vy;
-  113 :
-  114 :     Xhnew eta = H + zh;
-  115 :     Xhnew uUB = BoundData(0);
-  116 :     solve NavierStokes([ux, uy], [vx, vy], solver = Crout) =
-  117 :         int2d(Thnew)((ux * vx + uy * vy) / dt)
-  118 :         - int2d(Thnew)(
-  119 :               convect([uxold, uyold], -dt, uxold) * vx / dt
-  120 :             + convect([uxold, uyold], -dt, uyold) * vy / dt
-  121 :         )
-  122 :         //+ int2d(Th)(g * Grad(eta)' * [vx, vy])
-  123 :         - int2d(Thnew)(g * eta * Div(vx, vy)     (dx(vx) + dy( vy)) )
-  124 :         - int2d(Thnew)(nu / H * [vx, vy]' * Grad2(ux, uy)      [[dx(ux), dy(ux)], [dx( uy), dy( uy)]]  * Grad(H)È™ßt±Ë?    [dx(H), dy(H)]  - nu * Grad1(ux, uy)      [dx(ux), dy(ux), dx( uy), dy( uy)] ' * Grad1(vx, vy)      [dx(vx), dy(vx),È™ßt±Ë? dx( vy), dy( vy)] )
-  125 :         + int2d(Thnew)((tau * 1/H^(4/3) * (uxold * uxold + uyold * uyold)^(0.5)) * (ux * vx + uy * vy))
-  126 :         + on(2, ux = uUB, uy = 0) + on(1, 5, ux = 0, uy = 0);
-  127 :
-  128 :     uxold = ux; uyold = uy;
-  129 :     Hold = H;
-  130 :     plot(H, fill = 1, value = 1);
-  131 :     plot([ux, uy], fill = 1, value = 1);
-  132 :
-  133 :     savesol(foldername + "ThH." + string(cnt) + ".sol", Thold, H);
-  134 :         savemesh(Thold, foldername + "ThH." + string(cnt)+".mesh");
-  135 :     savesol(foldername + "ThU." + string(cnt) + ".sol", Thnew, [ux, uy]);
-  136 :         savemesh(Thnew, foldername + "ThU." + string(cnt)+".mesh");
-  137 :     cnt += 1;
-  138 : }
-  139 : savemesh(Thold, foldername + "ThU.mesh");
-  140 : savemesh(Thold, foldername + "ThH.mesh");
-  141 :  sizestack + 1024 =10128  ( 9104 )
- 
-  --  mesh:  Nb of Triangles =  12657, Nb of Vertices 6718
-t: 0.01
-  -- Solve :
-          min -8.46371  max 25.6862
-  --  mesh:  Nb of Triangles =   7992, Nb of Vertices 4710
- kk 2 3 :   -- Solve :
-          min -2.38883e-025  max 0.745809
-          min -0.0372525  max 0.0126297
-  number of required edges : 0
- write geo in result3/ThH.0.mesh.gmsh
-  number of required edges : 0
- write geo in result3/ThU.0.mesh.gmsh
-t: 0.02
-  -- Solve :
-          min -8.46371  max 25.6862
-  --  mesh:  Nb of Triangles =   7992, Nb of Vertices 4710
- kk 2 3 :   -- Solve :
-          min -2.39101e-025  max 0.918507
-          min -0.0745009  max 0.0252595
-  number of required edges : 0
- write geo in result3/ThH.1.mesh.gmsh
-  number of required edges : 0
- write geo in result3/ThU.1.mesh.gmsh
-t: 0.03
-  -- Solve :
-          min -8.46371  max 25.6862
-  --  mesh:  Nb of Triangles =   7992, Nb of Vertices 4710
- kk 2 3 :   -- Solve :
-          min -2.3932e-025  max 1.40593
-          min -0.111745  max 0.0378896
-  number of required edges : 0
- write geo in result3/ThH.2.mesh.gmsh
-  number of required edges : 0
- write geo in result3/ThU.2.mesh.gmsh
-t: 0.04
-  -- Solve :
-          min -8.46371  max 25.6862
-  --  mesh:  Nb of Triangles =   7992, Nb of Vertices 4710
- kk 2 3 :   -- Solve :
-          min -2.39539e-025  max 2.31229
-          min -0.148984  max 0.0505199
-  number of required edges : 0
- write geo in result3/ThH.3.mesh.gmsh
-  number of required edges : 0
- write geo in result3/ThU.3.mesh.gmsh
-t: 0.05
-  -- Solve :
-          min -8.46371  max 25.6862
-  --  mesh:  Nb of Triangles =   7992, Nb of Vertices 4710
- kk 2 3 :   -- Solve :
-          min -0.187131  max 4.58327
-          min -0.186219  max 0.0631503
-  number of required edges : 0
- write geo in result3/ThH.4.mesh.gmsh
-  number of required edges : 0
- write geo in result3/ThU.4.mesh.gmsh
-t: 0.06
-  -- Solve :
-          min -8.46371  max 25.6862
-  --  mesh:  Nb of Triangles =   7992, Nb of Vertices 4710
- kk 2 3 :   -- Solve :
-          min -2.67207  max 20.6616
-          min -0.223448  max 0.0757809
-  number of required edges : 0
- write geo in result3/ThH.5.mesh.gmsh
-  number of required edges : 0
- write geo in result3/ThU.5.mesh.gmsh
-t: 0.07
-  -- Solve :
-          min -8.46371  max 25.6862
-  --  mesh:  Nb of Triangles =   7992, Nb of Vertices 4710
- kk 2 3 :   -- Solve :
-          min -11.186  max 2.24919
-          min -0.260671  max 0.0884115
-  number of required edges : 0
- write geo in result3/ThH.6.mesh.gmsh
-  number of required edges : 0
- write geo in result3/ThU.6.mesh.gmsh
-t: 0.08
-  -- Solve :
-          min -8.46371  max 25.6862
-  --  mesh:  Nb of Triangles =   7992, Nb of Vertices 4710
- kk 2 3 :   -- Solve :
-          min -2.67323  max 20.6621
-          min -0.297889  max 0.101042
-  number of required edges : 0
- write geo in result3/ThH.7.mesh.gmsh
-  number of required edges : 0
- write geo in result3/ThU.7.mesh.gmsh
-t: 0.09
-  -- Solve :
-          min -8.46371  max 25.6862
-  --  mesh:  Nb of Triangles =   7992, Nb of Vertices 4710
- kk 2 3 :   -- Solve :
-          min -11.1858  max 2.2481
-          min -0.335099  max 0.113673
-  number of required edges : 0
- write geo in result3/ThH.8.mesh.gmsh
-  number of required edges : 0
- write geo in result3/ThU.8.mesh.gmsh
-t: 0.1
-  -- Solve :
-          min -8.46371  max 25.6862
-  --  mesh:  Nb of Triangles =   7992, Nb of Vertices 4710
- kk 2 3 :   -- Solve :
-          min -2.67438  max 20.6627
-          min -0.372304  max 0.126303
-  number of required edges : 0
- write geo in result3/ThH.9.mesh.gmsh
-  number of required edges : 0
- write geo in result3/ThU.9.mesh.gmsh
-t: 0.11
-  -- Solve :
-          min -8.46371  max 25.6862
-  --  mesh:  Nb of Triangles =   7992, Nb of Vertices 4710
- kk 2 3 :   -- Solve :
-          min -11.1857  max 2.247
-          min -0.409501  max 0.138934
-  number of required edges : 0
- write geo in result3/ThH.10.mesh.gmsh
-  number of required edges : 0
- write geo in result3/ThU.10.mesh.gmsh
-t: 0.12
-  -- Solve :
-          min -8.46371  max 25.6862
-  --  mesh:  Nb of Triangles =   7992, Nb of Vertices 4710
- kk 2 3 :   -- Solve :
-          min -2.67553  max 20.6632
-          min -0.44669  max 0.151564
-  number of required edges : 0
- write geo in result3/ThH.11.mesh.gmsh
-  number of required edges : 0
- write geo in result3/ThU.11.mesh.gmsh
-t: 0.13
-  -- Solve :
-          min -8.46371  max 25.6862
-  --  mesh:  Nb of Triangles =   7992, Nb of Vertices 4710
- kk 2 3 :   -- Solve :
-          min -11.1856  max 2.24591
-          min -0.483871  max 0.164194
-  number of required edges : 0
- write geo in result3/ThH.12.mesh.gmsh
-  number of required edges : 0
- write geo in result3/ThU.12.mesh.gmsh
-t: 0.14
-  -- Solve :
-          min -8.46371  max 25.6862
+   97 :
+   98 :     for (int i = 0; i < Thwet.nt; i++){
+   99 :         wf << Thwet[i][0] + 1 << " " << Thwet[i][1]  + 1 << " " << Thwet[i][2]  +
+31 << " " << Thwet[i].label << endl;
+  100 :     }
+  101 :
+  102 :     for(int i = 0; i < Thwet.nbe; i++){
+  103 :         wf << Thwet.be(i)[0] + 1 << " " << Thwet.be(i)[1] + 1 << " " << Thwet.be(i3).label <<  endl;
+  104 :     }
+  105 :
+  106 :     wf.flush;
+  107 :
+  108 :     Thwet = readmesh(foldername + "Thwet.msh");
+  109 :     // for(int i = 0; i < Thwet.nv; i++){
+  110 :     //     int it = Th(Thwet(i).x, Thwet(i).y).nuTriangle;
+  111 :     //     for (int j = 0; j < 3; j++){
+  112 :     //         if (Thwet(i).x == Th[it][j].x && Thwet(i).y == Th[it][j].y){
+  113 :     //             cout << "i = " << i << ": " << Th[it][j] << endl;
+  114 :     //             break;
+  115 :     //         }
+  116 :     //     }
+  117 :     // }
+  118 :
+  119 :     fespace Xhwet(Thwet, P1);
+  120 :     Xhwet uwx, uwy, vx, vy;
+  121 :     Xhwet uxold = 0.5, uyold = 0;
+  122 :     if (t > dt){
+  123 :         for(int i = 0; i < Thwet.nt; i++){
+  124 :             int it = Th(Thwet(i).x, Thwet(i).y).nuTriangle;
+  125 :             for (int j = 0; j < 3; j++){
+  126 :             if (Thwet(i).x == Th[it][j].x && Thwet(i).y == Th[it][j].y){
+  127 :                 uxold[][i] = ux[][Th[it][j]];
+  128 :                 uyold[][i] = uy[][Th[it][j]];
+  129 :                 break;
+  130 :             }
+  131 :         }
+  132 :     }
+  133 :     ux = 0; uy = 0; // reset
+  134 :
+  135 :     Xhwet eta = H + zh;
+  136 :     Xhwet uUB = BoundData(0);
+  137 :     solve NavierStokes([uwx, uwy], [vx, vy], solver = Crout) =
+  138 :         int2d(Thwet)((uwx * vx + uwy * vy) / dt)
+  139 :         - int2d(Thwet)(
+  140 :               convect([uxold, uyold], -dt, uxold) * vx / dt
+  141 :             + convect([uxold, uyold], -dt, uyold) * vy / dt
+  142 :         )
+  143 :         + int2d(Thwet)(g * Grad(eta)    [dx(eta), dy(eta)] ' * [vx, vy])
+  144 :         // - int2d(Thwet)(g * eta * Div(vx, vy))
+  145 :         - int2d(Thwet)(nu / H * [vx, vy]' * Grad2(uwx, uwy)      [[dx(uwx), dy(uwx3)], [dx( uwy), dy( uwy)]]  * Grad(H)    [dx(H), dy(H)]  - nu * Grad1(uwx, uwy)      [dx(uw3x), dy(uwx), dx( uwy), dy( uwy)] ' * Grad1(vx, vy)      [dx(vx), dy(vx), dx( vy), dy( vy)]3 )
+  146 :         + int2d(Thwet)((tau * 1/H^(4/3) * (uxold * uxold + uyold * uyold)^(0.5)) *3 (uwx * vx + uwy * vy))
+  147 :         + on(2, uwx = uUB, uwy = 0) + on(1, uwx = 0, uwy = 0);
+  148 :
+  149 :
+  150 :     for(int i = 0; i < Thwet.nt; i++){
+  151 :         int it = Th(Thwet(i).x, Thwet(i).y).nuTriangle;
+  152 :         for (int j = 0; j < 3; j++){
+  153 :             if (Thwet(i).x == Th[it][j].x && Thwet(i).y == Th[it][j].y){
+  154 :                 ux[][Th[it][j]] = uwx[][i];
+  155 :                 uy[][Th[it][j]] = uwy[][i];
+  156 :                 break;
+  157 :             }
+  158 :         }
+  159 :     }
+  160 :     Hold = H;
+  161 :     // plot(H, fill = 1, value = 1);
+  162 :     plot([ux, uy], fill = 1, value = 1);
+  163 :     // medit("Th", Th, [ux, uy]);
+  164 :
+  165 :     savesol(foldername + "ThH." + string(cnt) + ".sol", Th, H);
+  166 :         savemesh(Th, foldername + "ThH." + string(cnt)+".mesh");
+  167 :     savesol(foldername + "ThU." + string(cnt) + ".sol", Th, [ux, uy]);
+  168 :         savemesh(Th, foldername + "ThU." + string(cnt)+".mesh");
+  169 :     cnt += 1;
+  170 : }
+  171 : // savemesh(Th, foldername + "ThU.mesh");ÿ
+ Error line number 171, in file -- unkown --, before  token
+syntax error
+  current line = 170
+Compile error : syntax error
+        line number :171,
+error Compile error : syntax error
+        line number :171,
+ code = 1 mpirank: 0
  try getConsole D:\Study\Projects\XNM\code\XNM3.edp

@@ -3,8 +3,7 @@ load "medit"
 string path = "data/";
 int nthfile = 3;
 string filemesh = "Th" + nthfile;
-mesh Thold = readmesh(path + filemesh + ".msh");
-//medit("Thold", Thold);
+mesh Th = readmesh(path + filemesh + ".msh");
 
 int[int] NoVMesh = [515, 1802, 6718];
 real[int, int] hz(NoVMesh[nthfile - 1], 3);
@@ -17,8 +16,8 @@ for (int i = 0; i < hz.n; i++){
 }
 
 func real[int] FillZ(real[int] mat){
-    for (int i = 0; i < Thold.nv; i++){
-        mat(i) = mapz[string(Thold(i).x) + " " + string(Thold(i).y)];
+    for (int i = 0; i < Th.nv; i++){
+        mat(i) = mapz[string(Th(i).x) + " " + string(Th(i).y)];
     }
     return mat;
 }
@@ -50,91 +49,124 @@ macro Grad2(ux, uy) [[dx(ux), dy(ux)], [dx(uy), dy(uy)]] //
 macro Div(ux, uy) (dx(ux) + dy(uy)) //
 
 
-fespace Xhold(Thold, P1);
-Xhold zh; zh[] = FillZ(zh[]);
-Xhold H, phi, Hold = 9 - zh;
-Xhold uxold = 0.5, uyold = 0;
-Xhold ux, uy;
+fespace Xh(Th, P1);
+fespace Hh(Th, P1dc);
+Xh zh; zh[] = FillZ(zh[]);
+Hh H, phi, Hold = 9 - zh;
+Xh ux = 0.5, uy = 0.0;
 
 int cnt = 0;
 string foldername = "result3/";
 
-for(real t = dt; t <= T; t += dt){
+for(real t = dt; t <= dt; t += dt){
     cout << "t: " << t << endl;
     real[int] BoundData = InterpolationData(t);
-    Xhold etaUB = BoundData(1);
-    Xhold etaUB1 = BoundData(2);
-    Xhold etaUB2 = BoundData(3);
+    Xh etaUB = BoundData(1);
+    Xh etaUB1 = BoundData(2);
+    Xh etaUB2 = BoundData(3);
 
+    real al = 0.5;
+    macro n() (N.x * ux + N.y * uy) //
     solve TransportEquation(H, phi) = 
-        int2d(Thold)(H * phi / dt) - int2d(Thold)(Hold * phi / dt) 
-        //+ int2d(Th)(Grad(H)' * [ux, uy] * phi + H * Div(ux, uy) * phi)
-        - int2d(Thold)(H * [ux, uy]' * Grad(phi))
-        + on(2, H = etaUB - zh) + on(1, H = 0);// + on(3, H = etaUB1 - zh) + on(4, H = etaUB2 - zh);
+        int2d(Th)((H/dt + ux * dx(H) + uy * dy(H) + H * Div(ux, uy)) * phi)
+        + intalledges(Th)((1 - nTonEdge) * phi * (al * abs(n) - n/2) *  jump(H))
+        - int1d(Th, 2)((n < 0) * abs(n) * H * phi)
+        - int2d(Th)(Hold * phi / dt)
+        + int1d(Th, 2)((n < 0) * abs(n) * (etaUB - zh) * phi);
+    
+    mesh Thwet = trunc(Th, H >= eps);
 
-    mesh Thwet = trunc(Thold, H >= eps );
-    mesh Thdry = Thwet;
-    // mesh Thdry = trunc(Thold, H <= eps, split = 3, label = 6);
-    // medit("test", Thwet);
-
-    ofstream wf(foldername + "Thdry.msh");
+    ofstream wf(foldername + "Thwet.msh");
     wf.fixed;
-    wf << Thdry.nv << " " << Thdry.nt << " " << Thdry.nbe << endl;
-    for(int i = 0; i < Thdry.nv; i++){
+    wf << Thwet.nv << " " << Thwet.nt << " " << Thwet.nbe << endl;
+    
+    for(int i = 0; i < Thwet.nv; i++){
         int check = 0;
-        for (int j = 0; j < Thdry.nbe; j++){
-            if ((i == Thdry.be(j)[0] || i == Thdry.be(j)[1]) && (Thdry(i).label == 0 || Thdry(i).label == 0)){
+        for (int j = 0; j < Thwet.nbe; j++){
+            if ((i == Thwet.be(j)[0] || i == Thwet.be(j)[1]) && (Thwet(i).label == 0)){
                 check = 1;
                 break;
             }
         }
         if (check == 1){
-            wf << Thdry(i).x << " " << Thdry(i).y << " " << 1 << endl;
-        }else{
-            wf << Thdry(i).x << " " << Thdry(i).y << " " << Thdry(i).label << endl;
+            wf << Thwet(i).x << " " << Thwet(i).y << " " << 1 << endl;
+        } else {
+            wf << Thwet(i).x << " " << Thwet(i).y << " " << Thwet(i).label << endl;
         }
     }
-    for (int i = 0; i < Thdry.nt; i++){
-        wf << Thdry[i][0] + 1 << " " << Thdry[i][1]  + 1 << " " << Thdry[i][2]  + 1 << " " << Thdry[i].label << endl;
+
+    for (int i = 0; i < Thwet.nt; i++){
+        wf << Thwet[i][0] + 1 << " " << Thwet[i][1]  + 1 << " " << Thwet[i][2]  + 1 << " " << Thwet[i].label << endl;
     }
-    for(int i = 0; i < Thdry.nbe; i++){
-        wf << Thdry.be(i)[0] + 1 << " " << Thdry.be(i)[1] + 1 << " " << Thdry.be(i).label <<  endl;
+
+    for(int i = 0; i < Thwet.nbe; i++){
+        wf << Thwet.be(i)[0] + 1 << " " << Thwet.be(i)[1] + 1 << " " << Thwet.be(i).label <<  endl;
     }
+
     wf.flush;
 
-    Thdry = readmesh(foldername + "Thdry.msh");
-    // medit("test", Thdry);
-    mesh Thnew = Thdry;
-    // Thnew = trunc(Thnew, H > 0.001*eps);
-    // medit("Thnew", Thnew);
+    Thwet = readmesh(foldername + "Thwet.msh");
+    // for(int i = 0; i < Thwet.nv; i++){
+    //     int it = Th(Thwet(i).x, Thwet(i).y).nuTriangle;
+    //     for (int j = 0; j < 3; j++){
+    //         if (Thwet(i).x == Th[it][j].x && Thwet(i).y == Th[it][j].y){
+    //             cout << "i = " << i << ": " << Th[it][j] << endl;
+    //             break;
+    //         }
+    //     }
+    // }
 
-    fespace Xhnew(Thnew, P1);
-    Xhnew ux, uy, vx, vy;
+    fespace Xhwet(Thwet, P1);
+    Xhwet uwx, uwy, vx, vy;
+    Xhwet uxold = 0.5, uyold = 0;
+    if (t > dt){
+        for(int i = 0; i < Thwet.nv; i++){
+            int it = Th(Thwet(i).x, Thwet(i).y).nuTriangle;
+            for (int j = 0; j < 3; j++){
+                if (Thwet(i).x == Th[it][j].x && Thwet(i).y == Th[it][j].y){
+                    uxold[][i] = ux[][Th[it][j]];
+                    uyold[][i] = uy[][Th[it][j]];
+                    break;
+                }
+            }
+        }
+    }
+    ux = 0; uy = 0; // reset
     
-    Xhnew eta = H + zh;
-    Xhnew uUB = BoundData(0);
-    solve NavierStokes([ux, uy], [vx, vy], solver = Crout) = 
-        int2d(Thnew)((ux * vx + uy * vy) / dt)
-        - int2d(Thnew)(
+    Xhwet eta = H + zh;
+    Xhwet uUB = BoundData(0);
+    solve NavierStokes([uwx, uwy], [vx, vy], solver = Crout) = 
+        int2d(Thwet)((uwx * vx + uwy * vy) / dt)
+        - int2d(Thwet)(
               convect([uxold, uyold], -dt, uxold) * vx / dt 
             + convect([uxold, uyold], -dt, uyold) * vy / dt
         )
-        //+ int2d(Th)(g * Grad(eta)' * [vx, vy])
-        - int2d(Thnew)(g * eta * Div(vx, vy))
-        - int2d(Thnew)(nu / H * [vx, vy]' * Grad2(ux, uy) * Grad(H) - nu * Grad1(ux, uy)' * Grad1(vx, vy))
-        + int2d(Thnew)((tau * 1/H^(4/3) * (uxold * uxold + uyold * uyold)^(0.5)) * (ux * vx + uy * vy))
-        + on(2, ux = uUB, uy = 0) + on(1, ux = 0, uy = 0);
+        + int2d(Thwet)(g * Grad(eta)' * [vx, vy])
+        // - int2d(Thwet)(g * eta * Div(vx, vy))
+        - int2d(Thwet)(nu / H * [vx, vy]' * Grad2(uwx, uwy) * Grad(H) - nu * Grad1(uwx, uwy)' * Grad1(vx, vy))
+        + int2d(Thwet)((tau * 1/H^(4/3) * (uxold * uxold + uyold * uyold)^(0.5)) * (uwx * vx + uwy * vy))
+        + on(2, uwx = uUB, uwy = 0) + on(1, uwx = 0, uwy = 0);
 
-    uxold = ux; uyold = uy;
+    
+    for(int i = 0; i < Thwet.nv; i++){
+        int it = Th(Thwet(i).x, Thwet(i).y).nuTriangle;
+        for (int j = 0; j < 3; j++){
+            if (Thwet(i).x == Th[it][j].x && Thwet(i).y == Th[it][j].y){
+                ux[][Th[it][j]] = uwx[][i];
+                uy[][Th[it][j]] = uwy[][i];
+                break;
+            }
+        }
+    }
     Hold = H;
-    plot(H, fill = 1, value = 1);
+    // plot(H, fill = 1, value = 1);
     plot([ux, uy], fill = 1, value = 1);
+    // medit("Th", Th, [ux, uy]);
 
-    savesol(foldername + "ThH." + string(cnt) + ".sol", Thold, H);
-	savemesh(Thold, foldername + "ThH." + string(cnt)+".mesh");
-    savesol(foldername + "ThU." + string(cnt) + ".sol", Thnew, [ux, uy]);
-	savemesh(Thnew, foldername + "ThU." + string(cnt)+".mesh");
+    savesol(foldername + "ThH." + string(cnt) + ".sol", Th, H);
+	savemesh(Th, foldername + "ThH." + string(cnt)+".mesh");
+    savesol(foldername + "ThU." + string(cnt) + ".sol", Th, [ux, uy]);
+	savemesh(Th, foldername + "ThU." + string(cnt)+".mesh");
     cnt += 1;
 }
-savemesh(Thold, foldername + "ThU.mesh");
-savemesh(Thold, foldername + "ThH.mesh");
+savemesh(Th, foldername + "ThU.mesh");
