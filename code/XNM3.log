@@ -61,7 +61,7 @@
    59 : int cnt = 0;
    60 : string foldername = "result3/";
    61 :
-   62 : for(real t = dt; t <= dt; t += dt){
+   62 : for(real t = dt; t <= T; t += dt){
    63 :     cout << "t: " << t << endl;
    64 :     real[int] BoundData = InterpolationData(t);
    65 :     Xhold etaUB = BoundData(1);
@@ -75,15 +75,219 @@
    73 :         + on(2, H = etaUB - zh) + on(1, H = 0);// + on(3, H = etaUB1 - zh) + on(4, H = etaUB2 - zh);
    74 :
    75 :     mesh Thwet = trunc(Thold, H >= eps );
-   76 :     // mesh Thdry = trunc(Thold, H <= eps, split = 3, label = 6);
-   77 :     medit("test", Thdwet) The Identifier Thdwet does not exist
+   76 :     mesh Thdry = Thwet;
+   77 :     // mesh Thdry = trunc(Thold, H <= eps, split = 3, label = 6);
+   78 :     // medit("test", Thwet);
+   79 :
+   80 :     ofstream wf(foldername + "Thdry.msh");
+   81 :     wf.fixed;
+   82 :     wf << Thdry.nv << " " << Thdry.nt << " " << Thdry.nbe << endl;
+   83 :     for(int i = 0; i < Thdry.nv; i++){
+   84 :         int check = 0;
+   85 :         for (int j = 0; j < Thdry.nbe; j++){
+   86 :             if ((i == Thdry.be(j)[0] || i == Thdry.be(j)[1]) && (Thdry(i).label == 0 || Thdry(i).label == 0)){
+   87 :                 check = 1;
+   88 :                 break;
+   89 :             }
+   90 :         }
+   91 :         if (check == 1){
+   92 :             wf << Thdry(i).x << " " << Thdry(i).y << " " << 1 << endl;
+   93 :         }else{
+   94 :             wf << Thdry(i).x << " " << Thdry(i).y << " " << Thdry(i).label << endl;
+   95 :         }
+   96 :     }
+   97 :     for (int i = 0; i < Thdry.nt; i++){
+   98 :         wf << Thdry[i][0] + 1 << " " << Thdry[i][1]  + 1 << " " << Thdry[i][2]  + 1 << " " << Thdry[i].label <<
+È™ßt±Ë?endl;
+   99 :     }
+  100 :     for(int i = 0; i < Thdry.nbe; i++){
+  101 :         wf << Thdry.be(i)[0] + 1 << " " << Thdry.be(i)[1] + 1 << " " << Thdry.be(i).label <<  endl;
+  102 :     }
+  103 :     wf.flush;
+  104 :
+  105 :     Thdry = readmesh(foldername + "Thdry.msh");
+  106 :     // medit("test", Thdry);
+  107 :     mesh Thnew = Thdry;
+  108 :     // Thnew = trunc(Thnew, H > 0.001*eps);
+  109 :     // medit("Thnew", Thnew);
+  110 :
+  111 :     fespace Xhnew(Thnew, P1);
+  112 :     Xhnew ux, uy, vx, vy;
+  113 :
+  114 :     Xhnew eta = H + zh;
+  115 :     Xhnew uUB = BoundData(0);
+  116 :     solve NavierStokes([ux, uy], [vx, vy], solver = Crout) =
+  117 :         int2d(Thnew)((ux * vx + uy * vy) / dt)
+  118 :         - int2d(Thnew)(
+  119 :               convect([uxold, uyold], -dt, uxold) * vx / dt
+  120 :             + convect([uxold, uyold], -dt, uyold) * vy / dt
+  121 :         )
+  122 :         //+ int2d(Th)(g * Grad(eta)' * [vx, vy])
+  123 :         - int2d(Thnew)(g * eta * Div(vx, vy)     (dx(vx) + dy( vy)) )
+  124 :         - int2d(Thnew)(nu / H * [vx, vy]' * Grad2(ux, uy)      [[dx(ux), dy(ux)], [dx( uy), dy( uy)]]  * Grad(H)È™ßt±Ë?    [dx(H), dy(H)]  - nu * Grad1(ux, uy)      [dx(ux), dy(ux), dx( uy), dy( uy)] ' * Grad1(vx, vy)      [dx(vx), dy(vx),È™ßt±Ë? dx( vy), dy( vy)] )
+  125 :         + int2d(Thnew)((tau * 1/H^(4/3) * (uxold * uxold + uyold * uyold)^(0.5)) * (ux * vx + uy * vy))
+  126 :         + on(2, ux = uUB, uy = 0) + on(1, 5, ux = 0, uy = 0);
+  127 :
+  128 :     uxold = ux; uyold = uy;
+  129 :     Hold = H;
+  130 :     plot(H, fill = 1, value = 1);
+  131 :     plot([ux, uy], fill = 1, value = 1);
+  132 :
+  133 :     savesol(foldername + "ThH." + string(cnt) + ".sol", Thold, H);
+  134 :         savemesh(Thold, foldername + "ThH." + string(cnt)+".mesh");
+  135 :     savesol(foldername + "ThU." + string(cnt) + ".sol", Thnew, [ux, uy]);
+  136 :         savemesh(Thnew, foldername + "ThU." + string(cnt)+".mesh");
+  137 :     cnt += 1;
+  138 : }
+  139 : savemesh(Thold, foldername + "ThU.mesh");
+  140 : savemesh(Thold, foldername + "ThH.mesh");
+  141 :  sizestack + 1024 =10128  ( 9104 )
  
- Error line number 77, in file D:\Study\Projects\XNM\code\XNM3.edp, before  token )
- 
-  current line = 77
-Compile error :
-        line number :77, )
-error Compile error :
-        line number :77, )
- code = 1 mpirank: 0
+  --  mesh:  Nb of Triangles =  12657, Nb of Vertices 6718
+t: 0.01
+  -- Solve :
+          min -8.46371  max 25.6862
+  --  mesh:  Nb of Triangles =   7992, Nb of Vertices 4710
+ kk 2 3 :   -- Solve :
+          min -2.38883e-025  max 0.745809
+          min -0.0372525  max 0.0126297
+  number of required edges : 0
+ write geo in result3/ThH.0.mesh.gmsh
+  number of required edges : 0
+ write geo in result3/ThU.0.mesh.gmsh
+t: 0.02
+  -- Solve :
+          min -8.46371  max 25.6862
+  --  mesh:  Nb of Triangles =   7992, Nb of Vertices 4710
+ kk 2 3 :   -- Solve :
+          min -2.39101e-025  max 0.918507
+          min -0.0745009  max 0.0252595
+  number of required edges : 0
+ write geo in result3/ThH.1.mesh.gmsh
+  number of required edges : 0
+ write geo in result3/ThU.1.mesh.gmsh
+t: 0.03
+  -- Solve :
+          min -8.46371  max 25.6862
+  --  mesh:  Nb of Triangles =   7992, Nb of Vertices 4710
+ kk 2 3 :   -- Solve :
+          min -2.3932e-025  max 1.40593
+          min -0.111745  max 0.0378896
+  number of required edges : 0
+ write geo in result3/ThH.2.mesh.gmsh
+  number of required edges : 0
+ write geo in result3/ThU.2.mesh.gmsh
+t: 0.04
+  -- Solve :
+          min -8.46371  max 25.6862
+  --  mesh:  Nb of Triangles =   7992, Nb of Vertices 4710
+ kk 2 3 :   -- Solve :
+          min -2.39539e-025  max 2.31229
+          min -0.148984  max 0.0505199
+  number of required edges : 0
+ write geo in result3/ThH.3.mesh.gmsh
+  number of required edges : 0
+ write geo in result3/ThU.3.mesh.gmsh
+t: 0.05
+  -- Solve :
+          min -8.46371  max 25.6862
+  --  mesh:  Nb of Triangles =   7992, Nb of Vertices 4710
+ kk 2 3 :   -- Solve :
+          min -0.187131  max 4.58327
+          min -0.186219  max 0.0631503
+  number of required edges : 0
+ write geo in result3/ThH.4.mesh.gmsh
+  number of required edges : 0
+ write geo in result3/ThU.4.mesh.gmsh
+t: 0.06
+  -- Solve :
+          min -8.46371  max 25.6862
+  --  mesh:  Nb of Triangles =   7992, Nb of Vertices 4710
+ kk 2 3 :   -- Solve :
+          min -2.67207  max 20.6616
+          min -0.223448  max 0.0757809
+  number of required edges : 0
+ write geo in result3/ThH.5.mesh.gmsh
+  number of required edges : 0
+ write geo in result3/ThU.5.mesh.gmsh
+t: 0.07
+  -- Solve :
+          min -8.46371  max 25.6862
+  --  mesh:  Nb of Triangles =   7992, Nb of Vertices 4710
+ kk 2 3 :   -- Solve :
+          min -11.186  max 2.24919
+          min -0.260671  max 0.0884115
+  number of required edges : 0
+ write geo in result3/ThH.6.mesh.gmsh
+  number of required edges : 0
+ write geo in result3/ThU.6.mesh.gmsh
+t: 0.08
+  -- Solve :
+          min -8.46371  max 25.6862
+  --  mesh:  Nb of Triangles =   7992, Nb of Vertices 4710
+ kk 2 3 :   -- Solve :
+          min -2.67323  max 20.6621
+          min -0.297889  max 0.101042
+  number of required edges : 0
+ write geo in result3/ThH.7.mesh.gmsh
+  number of required edges : 0
+ write geo in result3/ThU.7.mesh.gmsh
+t: 0.09
+  -- Solve :
+          min -8.46371  max 25.6862
+  --  mesh:  Nb of Triangles =   7992, Nb of Vertices 4710
+ kk 2 3 :   -- Solve :
+          min -11.1858  max 2.2481
+          min -0.335099  max 0.113673
+  number of required edges : 0
+ write geo in result3/ThH.8.mesh.gmsh
+  number of required edges : 0
+ write geo in result3/ThU.8.mesh.gmsh
+t: 0.1
+  -- Solve :
+          min -8.46371  max 25.6862
+  --  mesh:  Nb of Triangles =   7992, Nb of Vertices 4710
+ kk 2 3 :   -- Solve :
+          min -2.67438  max 20.6627
+          min -0.372304  max 0.126303
+  number of required edges : 0
+ write geo in result3/ThH.9.mesh.gmsh
+  number of required edges : 0
+ write geo in result3/ThU.9.mesh.gmsh
+t: 0.11
+  -- Solve :
+          min -8.46371  max 25.6862
+  --  mesh:  Nb of Triangles =   7992, Nb of Vertices 4710
+ kk 2 3 :   -- Solve :
+          min -11.1857  max 2.247
+          min -0.409501  max 0.138934
+  number of required edges : 0
+ write geo in result3/ThH.10.mesh.gmsh
+  number of required edges : 0
+ write geo in result3/ThU.10.mesh.gmsh
+t: 0.12
+  -- Solve :
+          min -8.46371  max 25.6862
+  --  mesh:  Nb of Triangles =   7992, Nb of Vertices 4710
+ kk 2 3 :   -- Solve :
+          min -2.67553  max 20.6632
+          min -0.44669  max 0.151564
+  number of required edges : 0
+ write geo in result3/ThH.11.mesh.gmsh
+  number of required edges : 0
+ write geo in result3/ThU.11.mesh.gmsh
+t: 0.13
+  -- Solve :
+          min -8.46371  max 25.6862
+  --  mesh:  Nb of Triangles =   7992, Nb of Vertices 4710
+ kk 2 3 :   -- Solve :
+          min -11.1856  max 2.24591
+          min -0.483871  max 0.164194
+  number of required edges : 0
+ write geo in result3/ThH.12.mesh.gmsh
+  number of required edges : 0
+ write geo in result3/ThU.12.mesh.gmsh
+t: 0.14
+  -- Solve :
+          min -8.46371  max 25.6862
  try getConsole D:\Study\Projects\XNM\code\XNM3.edp

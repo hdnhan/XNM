@@ -59,7 +59,7 @@ Xhold ux, uy;
 int cnt = 0;
 string foldername = "result3/";
 
-for(real t = dt; t <= dt; t += dt){
+for(real t = dt; t <= T; t += dt){
     cout << "t: " << t << endl;
     real[int] BoundData = InterpolationData(t);
     Xhold etaUB = BoundData(1);
@@ -73,55 +73,68 @@ for(real t = dt; t <= dt; t += dt){
         + on(2, H = etaUB - zh) + on(1, H = 0);// + on(3, H = etaUB1 - zh) + on(4, H = etaUB2 - zh);
 
     mesh Thwet = trunc(Thold, H >= eps );
+    mesh Thdry = Thwet;
     // mesh Thdry = trunc(Thold, H <= eps, split = 3, label = 6);
-    medit("test", Thwet);
+    // medit("test", Thwet);
 
-    // ofstream wf(foldername + "Thdry.msh");
-    // wf.fixed;
-    // wf << Thdry.nv << " " << Thdry.nt << " " << Thdry.nbe << endl;
-    // for(int i = 0; i < Thdry.nv; i++){
-    //     wf << Thdry(i).x << " " << Thdry(i).y << " " << 5 << endl;
-    // }
-    // for (int i = 0; i < Thdry.nt; i++){
-    //     wf << Thdry[i][0] + 1 << " " << Thdry[i][1]  + 1 << " " << Thdry[i][2]  + 1 << " " << Thdry[i].label << endl;
-    // }
-    // for(int i = 0; i < Thdry.nbe; i++){
-    //     wf << Thdry.be(i)[0] + 1 << " " << Thdry.be(i)[1] + 1 << " " << Thdry.be(i).label <<  endl;
-    // }
-    // wf.flush;
+    ofstream wf(foldername + "Thdry.msh");
+    wf.fixed;
+    wf << Thdry.nv << " " << Thdry.nt << " " << Thdry.nbe << endl;
+    for(int i = 0; i < Thdry.nv; i++){
+        int check = 0;
+        for (int j = 0; j < Thdry.nbe; j++){
+            if ((i == Thdry.be(j)[0] || i == Thdry.be(j)[1]) && (Thdry(i).label == 0 || Thdry(i).label == 0)){
+                check = 1;
+                break;
+            }
+        }
+        if (check == 1){
+            wf << Thdry(i).x << " " << Thdry(i).y << " " << 1 << endl;
+        }else{
+            wf << Thdry(i).x << " " << Thdry(i).y << " " << Thdry(i).label << endl;
+        }
+    }
+    for (int i = 0; i < Thdry.nt; i++){
+        wf << Thdry[i][0] + 1 << " " << Thdry[i][1]  + 1 << " " << Thdry[i][2]  + 1 << " " << Thdry[i].label << endl;
+    }
+    for(int i = 0; i < Thdry.nbe; i++){
+        wf << Thdry.be(i)[0] + 1 << " " << Thdry.be(i)[1] + 1 << " " << Thdry.be(i).label <<  endl;
+    }
+    wf.flush;
 
-    // Thdry = readmesh(foldername + "Thdry.msh");
-    // mesh Thnew = Thwet + Thdry;
-    // // Thnew = trunc(Thnew, H > 0.001*eps);
+    Thdry = readmesh(foldername + "Thdry.msh");
+    // medit("test", Thdry);
+    mesh Thnew = Thdry;
+    // Thnew = trunc(Thnew, H > 0.001*eps);
     // medit("Thnew", Thnew);
 
-    // fespace Xhnew(Thnew, P1);
-    // Xhnew ux, uy, vx, vy;
+    fespace Xhnew(Thnew, P1);
+    Xhnew ux, uy, vx, vy;
     
-    // Xhnew eta = H + zh;
-    // Xhnew uUB = BoundData(0);
-    // solve NavierStokes([ux, uy], [vx, vy], solver = Crout) = 
-    //     int2d(Thnew)((ux * vx + uy * vy) / dt)
-    //     - int2d(Thnew)(
-    //           convect([uxold, uyold], -dt, uxold) * vx / dt 
-    //         + convect([uxold, uyold], -dt, uyold) * vy / dt
-    //     )
-    //     //+ int2d(Th)(g * Grad(eta)' * [vx, vy])
-    //     - int2d(Thnew)(g * eta * Div(vx, vy))
-    //     - int2d(Thnew)(nu / H * [vx, vy]' * Grad2(ux, uy) * Grad(H) - nu * Grad1(ux, uy)' * Grad1(vx, vy))
-    //     + int2d(Thnew)((tau * 1/H^(4/3) * (uxold * uxold + uyold * uyold)^(0.5)) * (ux * vx + uy * vy))
-    //     + on(2, ux = uUB, uy = 0) + on(1, 5, ux = 0, uy = 0);
+    Xhnew eta = H + zh;
+    Xhnew uUB = BoundData(0);
+    solve NavierStokes([ux, uy], [vx, vy], solver = Crout) = 
+        int2d(Thnew)((ux * vx + uy * vy) / dt)
+        - int2d(Thnew)(
+              convect([uxold, uyold], -dt, uxold) * vx / dt 
+            + convect([uxold, uyold], -dt, uyold) * vy / dt
+        )
+        //+ int2d(Th)(g * Grad(eta)' * [vx, vy])
+        - int2d(Thnew)(g * eta * Div(vx, vy))
+        - int2d(Thnew)(nu / H * [vx, vy]' * Grad2(ux, uy) * Grad(H) - nu * Grad1(ux, uy)' * Grad1(vx, vy))
+        + int2d(Thnew)((tau * 1/H^(4/3) * (uxold * uxold + uyold * uyold)^(0.5)) * (ux * vx + uy * vy))
+        + on(2, ux = uUB, uy = 0) + on(1, ux = 0, uy = 0);
 
-    // uxold = ux; uyold = uy;
-    // Hold = H;
-    // plot(H, fill = 1, value = 1);
-    // plot([ux, uy], fill = 1, value = 1);
+    uxold = ux; uyold = uy;
+    Hold = H;
+    plot(H, fill = 1, value = 1);
+    plot([ux, uy], fill = 1, value = 1);
 
-    // savesol(foldername + "ThH." + string(cnt) + ".sol", Thold, H);
-	// savemesh(Thold, foldername + "ThH." + string(cnt)+".mesh");
-    // savesol(foldername + "ThU." + string(cnt) + ".sol", Thnew, [ux, uy]);
-	// savemesh(Thnew, foldername + "ThU." + string(cnt)+".mesh");
+    savesol(foldername + "ThH." + string(cnt) + ".sol", Thold, H);
+	savemesh(Thold, foldername + "ThH." + string(cnt)+".mesh");
+    savesol(foldername + "ThU." + string(cnt) + ".sol", Thnew, [ux, uy]);
+	savemesh(Thnew, foldername + "ThU." + string(cnt)+".mesh");
     cnt += 1;
 }
-// savemesh(Thold, foldername + "ThU.mesh");
-// savemesh(Thold, foldername + "ThH.mesh");
+savemesh(Thold, foldername + "ThU.mesh");
+savemesh(Thold, foldername + "ThH.mesh");
