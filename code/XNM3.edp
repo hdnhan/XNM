@@ -58,7 +58,7 @@ Xh ux = 0.5, uy = 0.0;
 int cnt = 0;
 string foldername = "result3/";
 
-for(real t = dt; t <= dt; t += dt){
+for(real t = dt; t <= T; t += dt){
     cout << "t: " << t << endl;
     real[int] BoundData = InterpolationData(t);
     Xh etaUB = BoundData(1);
@@ -106,34 +106,32 @@ for(real t = dt; t <= dt; t += dt){
     wf.flush;
 
     Thwet = readmesh(foldername + "Thwet.msh");
-    // for(int i = 0; i < Thwet.nv; i++){
-    //     int it = Th(Thwet(i).x, Thwet(i).y).nuTriangle;
-    //     for (int j = 0; j < 3; j++){
-    //         if (Thwet(i).x == Th[it][j].x && Thwet(i).y == Th[it][j].y){
-    //             cout << "i = " << i << ": " << Th[it][j] << endl;
-    //             break;
-    //         }
-    //     }
-    // }
+    // medit("Thwet", Thwet);
 
     fespace Xhwet(Thwet, P1);
     Xhwet uwx, uwy, vx, vy;
     Xhwet uxold = 0.5, uyold = 0;
-    if (t > dt){
-        for(int i = 0; i < Thwet.nv; i++){
-            int it = Th(Thwet(i).x, Thwet(i).y).nuTriangle;
-            for (int j = 0; j < 3; j++){
-                if (Thwet(i).x == Th[it][j].x && Thwet(i).y == Th[it][j].y){
+    Xhwet etawet, Hwet;
+
+    for(int i = 0; i < Thwet.nv; i++){
+        // cout << "i = " << i + 2 << ": ";
+        int it = Th(Thwet(i).x, Thwet(i).y).nuTriangle;
+        for (int j = 0; j < 3; j++){
+            if (Thwet(i).x == Th[it][j].x && Thwet(i).y == Th[it][j].y){
+                // cout.fixed << Th[it][j] + 2 << " => " << Th[it][j].x << " " << Th[it][j].y << endl;
+                if (t > dt){
                     uxold[][i] = ux[][Th[it][j]];
                     uyold[][i] = uy[][Th[it][j]];
-                    break;
                 }
+                Hwet[][i] = H[][Th[it][j]]; 
+                etawet[][i] = H[][Th[it][j]] + zh[][Th[it][j]];
+                break;
             }
         }
     }
     ux = 0; uy = 0; // reset
     
-    Xhwet eta = H + zh;
+    // Xhwet eta = H + zh;
     Xhwet uUB = BoundData(0);
     solve NavierStokes([uwx, uwy], [vx, vy], solver = Crout) = 
         int2d(Thwet)((uwx * vx + uwy * vy) / dt)
@@ -141,10 +139,10 @@ for(real t = dt; t <= dt; t += dt){
               convect([uxold, uyold], -dt, uxold) * vx / dt 
             + convect([uxold, uyold], -dt, uyold) * vy / dt
         )
-        + int2d(Thwet)(g * Grad(eta)' * [vx, vy])
+        + int2d(Thwet)(g * Grad(etawet)' * [vx, vy])
         // - int2d(Thwet)(g * eta * Div(vx, vy))
-        - int2d(Thwet)(nu / H * [vx, vy]' * Grad2(uwx, uwy) * Grad(H) - nu * Grad1(uwx, uwy)' * Grad1(vx, vy))
-        + int2d(Thwet)((tau * 1/H^(4/3) * (uxold * uxold + uyold * uyold)^(0.5)) * (uwx * vx + uwy * vy))
+        - int2d(Thwet)(nu / Hwet * [vx, vy]' * Grad2(uwx, uwy) * Grad(Hwet) - nu * Grad1(uwx, uwy)' * Grad1(vx, vy))
+        + int2d(Thwet)((tau * 1/Hwet^(4/3) * (uxold * uxold + uyold * uyold)^(0.5)) * (uwx * vx + uwy * vy))
         + on(2, uwx = uUB, uwy = 0) + on(1, uwx = 0, uwy = 0);
 
     
@@ -160,7 +158,7 @@ for(real t = dt; t <= dt; t += dt){
     }
     Hold = H;
     // plot(H, fill = 1, value = 1);
-    plot([ux, uy], fill = 1, value = 1);
+    // plot([ux, uy], fill = 1, value = 1);
     // medit("Th", Th, [ux, uy]);
 
     savesol(foldername + "ThH." + string(cnt) + ".sol", Th, H);
@@ -169,4 +167,5 @@ for(real t = dt; t <= dt; t += dt){
 	savemesh(Th, foldername + "ThU." + string(cnt)+".mesh");
     cnt += 1;
 }
+savemesh(Th, foldername + "ThH.mesh");
 savemesh(Th, foldername + "ThU.mesh");
