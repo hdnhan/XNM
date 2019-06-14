@@ -1,0 +1,135 @@
+load "medit"
+
+string path = "data/";
+string filemesh = "Th2";
+mesh Th = readmesh(path + filemesh + ".msh");
+//medit("Th", Th);
+
+int NoVMesh; // Number of Vertices Mesh
+if (filemesh == "Th1"){
+    NoVMesh = 515;
+}else if (filemesh == "Th2"){
+    NoVMesh = 1802;
+}else{
+    NoVMesh = 6718;
+}
+
+real[int, int] hz(NoVMesh, 3);
+ifstream filemeshZ(path + filemesh + "CoZ.txt");
+filemeshZ >> hz;
+
+real[string] mapz;
+for (int i = 0; i < hz.n; i++){
+    mapz[string(hz(i, 0)) + " " + string(hz(i, 1))] = hz(i, 2);
+}
+
+func real[int] FillZ(real[int] mat){
+    for (int i = 0; i < Th.nv; i++){
+        mat(i) = mapz[string(Th(i).x) + " " + string(Th(i).y)];
+    }
+    return mat;
+}
+
+real[int, int] data(503, 4);
+ifstream filedata(path + "SLMIKE21-3.txt");
+filedata >> data;
+
+func real[int] InterpolationData(real t){
+    // t: time (unit: second)
+    real T = 3600;
+    int n = t /  T;
+    real delt = t / T - n;
+    real[int] res(4);
+    res(0) = data(n, 0) * delt + data(n + 1, 0) * (1 - delt);
+    res(1) = data(n, 1) * delt + data(n + 1, 1) * (1 - delt);
+    res(2) = data(n, 2) * delt + data(n + 1, 2) * (1 - delt);
+    res(3) = data(n, 3) * delt + data(n + 1, 3) * (1 - delt);
+    return res; 
+}
+
+real dt = 1e-2, nu = 2.67 * 1e-4, g = 9.81, rho = 1000, n = 0.025, T = 9999999;
+real tau =  g * n * n;
+ 
+macro Grad(u) [dx(u), dy(u)] //
+macro Grad1(ux, uy) [dx(ux), dy(ux), dx(uy), dy(uy)] //
+macro Grad2(ux, uy) [[dx(ux), dy(ux)], [dx(uy), dy(uy)]] //
+macro Div(ux, uy) (dx(ux) + dy(uy)) //
+
+
+fespace Xh(Th, P1);
+Xh zh; zh[] = FillZ(zh[]);
+Xh H, phi;
+Xh Hold = 9 - zh;
+Xh uxt, uyt;
+
+real eps = 0.05;
+int cnt = 0;
+string foldername = "result3/";
+
+for(real t = dt; t < T; t += dt){
+    cout << "t: " << t << endl;
+    real[int] BoundData = InterpolationData(t);
+    Xh etaUB = BoundData(1);
+    Xh etaUB1 = BoundData(2);
+    Xh etaUB2 = BoundData(3);
+    // Xh uOnBoundary2 = 0;
+
+    solve TransportEquation(H, phi) = 
+        int2d(Th)(H * phi / dt) - int2d(Th)(Hold * phi / dt) 
+        //+ int2d(Th)(Grad(H)' * [ux, uy] * phi + H * Div(ux, uy) * phi)
+        - int2d(Th)(H * [uxt, uyt]' * Grad(phi))
+        + on(2, H = etaUB - zh) + on(1, H = 0);// + on(3, H = etaUB1 - zh) + on(4, H = etaUB2 - zh);
+
+
+    mesh Thwet = trunc(Th, H > eps);
+    mesh Thdry = trunc(Th, H <= eps);
+
+    ofstream wf(foldername + "Thdry.msh");
+    wf.fixed;
+    wf << Thdry.nv << " " << Thdry.nt << " " << Thdry.nbe << endl;
+    for(int i = 0; i < Thdry.nv; i++){
+        wf << Thdry(i).x << " " << Thdry(i).y << " " << 5 << endl;
+    }
+    for (int i = 0; i < Thdry.nt; i++){
+        wf << Thdry[i][0] + 1 << " " << Thdry[i][1]  + 1 << " " << Thdry[i][2]  + 1 << " " << Thdry[i].label << endl;
+    }
+
+    for(int i = 0; i < Thdry.nbe; i++){
+        wf << Thdry.be(i)[0] + 1 << " " << Thdry.be(i)[1] + 1 << " " << Thdry.be(i).label <<  endl;
+    }
+    wf.flush;
+
+
+    Thdry = readmesh(foldername + "Thdry.msh");
+    mesh Thnew = Thwet + Thdry;
+    // medit("Th", Thnew);
+
+    fespace Xhnew(Thnew, P1);
+    Xhnew ux, uy, vx, vy;
+    Xhnew uxold = 0.5, uyold = 0;
+    Xhnew eta = H + zh;
+    Xhnew uUB = BoundData(0);
+    solve NavierStokes([ux, uy], [vx, vy], solver = Crout) = 
+        int2d(Thnew)((ux * vx + uy * vy) / dt)
+        - int2d(Thnew)(
+            convect([uxold, uyold], -dt, uxold) * vx / dt 
+            + convect([uxold, uyold], -dt, uyold) * vy / dt
+        )
+        //+ int2d(Th)(g * Grad(eta)' * [vx, vy])
+        - int2d(Thnew)(g * eta * Div(vx, vy))
+        - int2d(Thnew)(nu / H * [vx, vy]' * Grad2(ux, uy) * Grad(H) - nu * Grad1(ux, uy)' * Grad1(vx, vy))
+        + int2d(Thnew)((tau * 1/H^(4/3) * (uxold * uxold + uyold * uyold)^(0.5)) * (ux * vx + uy * vy))
+        + on(2, ux = uUB, uy = 0) + on(1, 5, ux = 0, uy = 0);
+
+    uxold = ux; uyold = uy;
+    uxt = ux; uyt = uy;
+    Hold = H;
+    // plot(H, fill = 1, value = 1);
+    // savesol(foldername + "ThH." + string(cnt) + ".sol", Th, H);
+	// savemesh(Th, foldername + "ThH." + string(cnt)+".mesh");
+    // savesol(foldername + "ThU." + string(cnt) + ".sol", Th, H);
+	// savemesh(Th, foldername + "ThU." + string(cnt)+".mesh");
+    cnt += 1;
+}
+savemesh(Th, foldername + "ThU.mesh");
+savemesh(Th, foldername + "ThH.mesh");

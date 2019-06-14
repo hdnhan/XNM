@@ -1,0 +1,20 @@
+\documentclass[14pt]{extreport}
+\usepackage[utf8]{vietnam}
+\usepackage{amsmath, amssymb, amsthm}
+\usepackage{color, graphicx, cases}
+
+\begin{document}
+
+\begin{align*}
+	u = [u_x, u_y], \triangledown f = \left [\frac{\partial}{\partial x}, \frac{\partial}{\partial y}\right ] f
+\end{align*}
+\begin{align*}
+	\triangledown u = \begin{bmatrix}\frac{\partial u_x}{\partial x} & \frac{\partial u_x}{\partial y} \\\frac{\partial u_y}{\partial x} & \frac{\partial u_y}{\partial y}\end{bmatrix}=\begin{bmatrix}\triangledown u_x\\\triangledown u_y\end{bmatrix}
+\end{align*}
+
+\begin{align*}
+	\triangledown .\left ( H\triangledown u \right )&=\begin{bmatrix}\triangledown.\left(H\triangledown u_x\right)\\\triangledown.\left(H\triangledown u_y\right)\end{bmatrix}=\begin{bmatrix}\triangledown H .\triangledown u_x+H\triangledown.\left(\triangledown u_x\right)\\\triangledown H .\triangledown u_y+H\triangledown.\left(\triangledown u_y\right)\end{bmatrix}\\
+	&=\triangledown H.\begin{bmatrix}\triangledown u_x\\\triangledown u_y\end{bmatrix}+H\triangledown.\begin{bmatrix}\triangledown u_x\\ \triangledown u_y\end{bmatrix}=\triangledown H.\triangledown u+H\triangledown.\left(\triangledown u\right).	
+\end{align*}
+
+\end{document}

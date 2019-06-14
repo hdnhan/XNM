@@ -1,20 +1,69 @@
--- FreeFem++ v  3.610001 (date jeu. 12 juil. 2018 15:05:23)
- Load: lg_fem lg_mesh lg_mesh3 eigenvalue
-    1 : //string path = "data/";
-    2 : string path = "";
-    3 : string filemesh = "Th1";
-    4 : mesh Th = readmesh(path + filemesh + ".msh");
-    5 : fespace Vh(Th,P1); Vh u,v;
-    6 : Vh kappa=1+2*(x<-1)*(x>-2)*(y<3)*(y>-3);
-    7 : solve a(u,v)= int2d(Th)(kappa*(dx(u)*dx(v)+dy(u)*dy(v)))+on(1, 2,u=20)+on(3, 4,u=60);
-    8 : plot(u,wait=true, value=true, fill=true); sizestack + 1024 =1664  ( 640 )
  
-  --  mesh:  Nb of Triangles =    811, Nb of Vertices 503
- Warning: -- Your set of boundary condition is incompatible with the mesh label.
-  -- Solve :
-          min 20  max 20
-times: compile 0.095s, execution 0.038s,  mpirank:0
- ######## We forget of deleting   54 Nb pointer,   0Bytes  ,  mpirank 0, memory leak =0
- CodeAlloc : nb ptr  2818,  size :377424 mpirank: 0
+D:\Study\Projects\XNM\code>test.edp
+ 
+D:\Study\Projects\XNM\code>-- FreeFem++ v  3.610001 (date jeu. 12 juil. 2018 15:05:23)
+ Load: lg_fem lg_mesh lg_mesh3 eigenvalue
+    1 : load "medit"(load: loadLibary C:\Program Files (x86)\FreeFem++\\.\medit = 0)
+    2 :
+    3 : string path = "data/";
+    4 : int nthfile = 2;
+    5 : string filemesh = "Th" + nthfile;
+    6 : mesh Thold = readmesh(path + filemesh + ".msh");
+    7 : mesh Thnew = Thold;
+    8 : //medit("Thold", Thold);
+    9 :
+   10 : int[int] NoVMesh = [515, 1802, 6718];
+   11 : real[int, int] hz(NoVMesh[nthfile - 1], 3);
+   12 : ifstream filemeshZ(path + filemesh + "CoZ.txt");
+   13 : filemeshZ >> hz;
+   14 :
+   15 : real[string] mapz;
+   16 : for (int i = 0; i < hz.n; i++){
+   17 :     mapz[string(hz(i, 0)) + " " + string(hz(i, 1))] = hz(i, 2);
+   18 : }
+   19 :
+   20 : func real[int] FillZ(real[int] mat){
+   21 :     for (int i = 0; i < Thold.nv; i++){
+   22 :         mat(i) = mapz[string(Thold(i).x) + " " + string(Thold(i).y)];
+   23 :     }
+   24 :     return mat;
+   25 : }
+   26 :
+   27 : real[int, int] data(503, 4);
+   28 : ifstream filedata(path + "SLMIKE21-3.txt");
+   29 : filedata >> data;
+   30 :
+   31 : func real[int] InterpolationData(real t){
+   32 :     // t: time (unit: second)
+   33 :     real T = 3600;
+   34 :     int n = t /  T;
+   35 :     real delt = t / T - n;
+   36 :     real[int] res(4);
+   37 :     res(0) = data(n, 0) * delt + data(n + 1, 0) * (1 - delt);
+   38 :     res(1) = data(n, 1) * delt + data(n + 1, 1) * (1 - delt);
+   39 :     res(2) = data(n, 2) * delt + data(n + 1, 2) * (1 - delt);
+   40 :     res(3) = data(n, 3) * delt + data(n + 1, 3) * (1 - delt);
+   41 :     return res;
+   42 : }
+   43 :
+   44 : real dt = 1e-2, nu = 2.67 * 1e-4, g = 9.81, rho = 1000, n = 0.025, T = 9999999;
+   45 : real tau =  g * n * n;
+   46 : real eps = 0.05;
+   47 :
+   48 : macro Grad(u) [dx(u), dy(u)]  )   [dx(u), dy(u)] //
+   49 : macro Grad1(ux, uy) [dx(ux), dy(ux), dx(uy), dy(uy)]  )   [dx(ux), dy(ux), dx(uy), dy(uy)] //
+   50 : macro Grad2(ux, uy) [[dx(ux), dy(ux)], [dx(uy), dy(uy)]]  )   [[dx(ux), dy(ux)], [dx(uy), dy(uy)]] //
+   51 : macro Div(ux, uy) (dx(ux) + dy(uy))  )   (dx(ux) + dy(uy)) //
+   52 :
+   53 :
+   54 : fespace Xhold(Thold, P1);
+   55 : fespace Xhnew(Thnew, P1);
+   56 :
+   57 : Xhnew zh; zh[] = FillZ(zh[]);
+   58 : Xhold H, phi, Hold = 9 - zh; sizestack + 1024 =2792  ( 1768 )
+ 
+  --  mesh:  Nb of Triangles =   3214, Nb of Vertices 1802
+times: compile 0.153s, execution 0.15s,  mpirank:0
+ ######## We forget of deleting   32517 Nb pointer,   0Bytes  ,  mpirank 0, memory leak =0 CodeAlloc : nb ptr  3045,  size :382192 mpirank: 0
 Ok: Normal End
  try getConsole D:\Study\Projects\XNM\code\test.edp

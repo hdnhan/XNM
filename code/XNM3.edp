@@ -1,21 +1,14 @@
 load "medit"
 
 string path = "data/";
-string filemesh = "Th2";
-mesh Th = readmesh(path + filemesh + ".msh");
-//medit("Th", Th);
+int nthfile = 3;
+string filemesh = "Th" + nthfile;
+mesh Thold = readmesh(path + filemesh + ".msh");
+//medit("Thold", Thold);
 
-int NoVMesh; // Number of Vertices Mesh
-if (filemesh == "Th1"){
-    NoVMesh = 503;
-}else if (filemesh == "Th2"){
-    NoVMesh = 1787;
-}else{
-    NoVMesh = 6724;
-}
-
-real[int, int] hz(NoVMesh, 4);
-ifstream filemeshZ(path + filemesh + "CoZ.mesh");
+int[int] NoVMesh = [515, 1802, 6718];
+real[int, int] hz(NoVMesh[nthfile - 1], 3);
+ifstream filemeshZ(path + filemesh + "CoZ.txt");
 filemeshZ >> hz;
 
 real[string] mapz;
@@ -24,8 +17,8 @@ for (int i = 0; i < hz.n; i++){
 }
 
 func real[int] FillZ(real[int] mat){
-    for (int i = 0; i < Th.nv; i++){
-        mat(i) = mapz[string(Th(i).x) + " " + string(Th(i).y)];
+    for (int i = 0; i < Thold.nv; i++){
+        mat(i) = mapz[string(Thold(i).x) + " " + string(Thold(i).y)];
     }
     return mat;
 }
@@ -49,11 +42,7 @@ func real[int] InterpolationData(real t){
 
 real dt = 1e-2, nu = 2.67 * 1e-4, g = 9.81, rho = 1000, n = 0.025, T = 9999999;
 real tau =  g * n * n;
- 
-fespace Xh(Th, P1);
-Xh ux, uy, vx, vy;
-Xh uxold = 0.5, uyold = 0, eta, H, phi;
-Xh zh; zh[] = FillZ(zh[]);
+real eps = 0.05;
 
 macro Grad(u) [dx(u), dy(u)] //
 macro Grad1(ux, uy) [dx(ux), dy(ux), dx(uy), dy(uy)] //
@@ -61,69 +50,78 @@ macro Grad2(ux, uy) [[dx(ux), dy(ux)], [dx(uy), dy(uy)]] //
 macro Div(ux, uy) (dx(ux) + dy(uy)) //
 
 
-Xh uUB;
-
-problem NavierStokes([ux, uy], [vx, vy], solver = Crout) = 
-    int2d(Th)((ux * vx + uy * vy) / dt)
-    - int2d(Th)(
-          convect([uxold, uyold], -dt, uxold) * vx / dt 
-        + convect([uxold, uyold], -dt, uyold) * vy / dt
-    )
-    //+ int2d(Th)(g * Grad(eta)' * [vx, vy])
-    - int2d(Th)(g * eta * Div(vx, vy))
-    - int2d(Th)(nu / H * [vx, vy]' * Grad2(ux, uy) * Grad(H) - nu * Grad1(ux, uy)' * Grad1(vx, vy))
-    + int2d(Th)((tau * 1/H^(4/3) * (uxold * uxold + uyold * uyold)^(0.5)) * (ux * vx + uy * vy))
-    + on(2, ux = uUB, uy = 0) + on(1, ux = 0, uy = 0);
-
-Xh Hold = 9 - zh;
-Xh etaUB, etaUB1, etaUB2;
-problem TransportEquation(H, phi) = 
-    int2d(Th)(H * phi / dt) - int2d(Th)(Hold * phi / dt) 
-    //+ int2d(Th)(Grad(H)' * [ux, uy] * phi + H * Div(ux, uy) * phi)
-    - int2d(Th)(H * [ux, uy]' * Grad(phi))
-    + on(2, H = etaUB - zh) + on(1, H = 0);// + on(3, H = etaUB1 - zh) + on(4, H = etaUB2 - zh);
-
-
+fespace Xhold(Thold, P1);
+Xhold zh; zh[] = FillZ(zh[]);
+Xhold H, phi, Hold = 9 - zh;
+Xhold uxold = 0.5, uyold = 0;
+Xhold ux, uy;
 
 int cnt = 0;
-real eps = 1e-6;
-string foldername = "result4/";
-for(real t = dt; t < T; t += dt){
+string foldername = "result3/";
+
+for(real t = dt; t <= dt; t += dt){
     cout << "t: " << t << endl;
     real[int] BoundData = InterpolationData(t);
-    etaUB = BoundData(1); // Th4
-    etaUB1 = BoundData(2);
-    etaUB2 = BoundData(3);
-    Xh uOnBoundary2 = 0;
-    TransportEquation;
-    for(int it = 0; it < Th.nv; it++){
-        if(abs(H[][it]) < eps){
-            H[][it] = eps;
-        }
-    }
-      
-    eta = H + zh;
-    uUB = BoundData(0);
-    cout << "u from file: "  << BoundData(0) << endl;
-    //cout << "min uUB: " << uUB[].min << " " << uUB[].max << endl;
-    NavierStokes;
-    for(int it = 0; it < Th.nv; it++){
-        if(H[][it] < 0){
-            ux[][it] = 0;
-            uy[][it] = 0;
-        }
-    }
-    uxold = ux; uyold = uy;
-    Hold = H;
+    Xhold etaUB = BoundData(1);
+    Xhold etaUB1 = BoundData(2);
+    Xhold etaUB2 = BoundData(3);
 
-    //plot([ux, uy], fill = 1, value = 1);
-    plot(H, fill = 1, value = 1);
+    solve TransportEquation(H, phi) = 
+        int2d(Thold)(H * phi / dt) - int2d(Thold)(Hold * phi / dt) 
+        //+ int2d(Th)(Grad(H)' * [ux, uy] * phi + H * Div(ux, uy) * phi)
+        - int2d(Thold)(H * [ux, uy]' * Grad(phi))
+        + on(2, H = etaUB - zh) + on(1, H = 0);// + on(3, H = etaUB1 - zh) + on(4, H = etaUB2 - zh);
+
+    mesh Thwet = trunc(Thold, H >= eps );
+    // mesh Thdry = trunc(Thold, H <= eps, split = 3, label = 6);
+    medit("test", Thwet);
+
+    // ofstream wf(foldername + "Thdry.msh");
+    // wf.fixed;
+    // wf << Thdry.nv << " " << Thdry.nt << " " << Thdry.nbe << endl;
+    // for(int i = 0; i < Thdry.nv; i++){
+    //     wf << Thdry(i).x << " " << Thdry(i).y << " " << 5 << endl;
+    // }
+    // for (int i = 0; i < Thdry.nt; i++){
+    //     wf << Thdry[i][0] + 1 << " " << Thdry[i][1]  + 1 << " " << Thdry[i][2]  + 1 << " " << Thdry[i].label << endl;
+    // }
+    // for(int i = 0; i < Thdry.nbe; i++){
+    //     wf << Thdry.be(i)[0] + 1 << " " << Thdry.be(i)[1] + 1 << " " << Thdry.be(i).label <<  endl;
+    // }
+    // wf.flush;
+
+    // Thdry = readmesh(foldername + "Thdry.msh");
+    // mesh Thnew = Thwet + Thdry;
+    // // Thnew = trunc(Thnew, H > 0.001*eps);
+    // medit("Thnew", Thnew);
+
+    // fespace Xhnew(Thnew, P1);
+    // Xhnew ux, uy, vx, vy;
     
-    savesol(foldername + "ThH." + string(cnt) + ".sol", Th, H);
-	savemesh(Th, foldername + "ThH." + string(cnt)+".mesh");
-    savesol(foldername + "ThU." + string(cnt) + ".sol", Th, H);
-	savemesh(Th, foldername + "ThU." + string(cnt)+".mesh");
+    // Xhnew eta = H + zh;
+    // Xhnew uUB = BoundData(0);
+    // solve NavierStokes([ux, uy], [vx, vy], solver = Crout) = 
+    //     int2d(Thnew)((ux * vx + uy * vy) / dt)
+    //     - int2d(Thnew)(
+    //           convect([uxold, uyold], -dt, uxold) * vx / dt 
+    //         + convect([uxold, uyold], -dt, uyold) * vy / dt
+    //     )
+    //     //+ int2d(Th)(g * Grad(eta)' * [vx, vy])
+    //     - int2d(Thnew)(g * eta * Div(vx, vy))
+    //     - int2d(Thnew)(nu / H * [vx, vy]' * Grad2(ux, uy) * Grad(H) - nu * Grad1(ux, uy)' * Grad1(vx, vy))
+    //     + int2d(Thnew)((tau * 1/H^(4/3) * (uxold * uxold + uyold * uyold)^(0.5)) * (ux * vx + uy * vy))
+    //     + on(2, ux = uUB, uy = 0) + on(1, 5, ux = 0, uy = 0);
+
+    // uxold = ux; uyold = uy;
+    // Hold = H;
+    // plot(H, fill = 1, value = 1);
+    // plot([ux, uy], fill = 1, value = 1);
+
+    // savesol(foldername + "ThH." + string(cnt) + ".sol", Thold, H);
+	// savemesh(Thold, foldername + "ThH." + string(cnt)+".mesh");
+    // savesol(foldername + "ThU." + string(cnt) + ".sol", Thnew, [ux, uy]);
+	// savemesh(Thnew, foldername + "ThU." + string(cnt)+".mesh");
     cnt += 1;
 }
-savemesh(Th, foldername + "ThU.mesh");
-savemesh(Th, foldername + "ThH.mesh");
+// savemesh(Thold, foldername + "ThU.mesh");
+// savemesh(Thold, foldername + "ThH.mesh");
