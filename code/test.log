@@ -1,33 +1,14 @@
-Microsoft Windows [Version 10.0.17763.557]
-(c) 2018 Microsoft Corporation. All rights reserved.
- 
-D:\Study\Projects\XNM\code>test.edp
- 
-D:\Study\Projects\XNM\code>-- FreeFem++ v  3.610001 (date jeu. 12 juil. 2018 15:05:23)
+-- FreeFem++ v  3.610001 (date jeu. 12 juil. 2018 15:05:23)
  Load: lg_fem lg_mesh lg_mesh3 eigenvalue
     1 : mesh Th = square(4, 4);
-    2 : fespace Xh(Th, P1);
-    3 : Xh u = 0;
-    4 : Xh vdof;
-    5 : vdof[] = 0 : Xh.ndof-1;
-    6 : for (int i = 0; i < Th.nv; i++){
-    7 :     u[][vdof(Th(i).x, Th(i).y)] = 1;
-    8 :     //cout << vdof(Th(i).x, Th(i).y) << endl;
-    9 :     // cout << u(Th(i).x, Th(i).y) << endl;
-   10 :     // cout << Th[Th(i).x, Th(i).y] << endl;
-   11 : }
-   12 : cout << u[] << endl; sizestack + 1024 =1444  ( 420 )
+    2 : int[int] r = [1, 5];
+    3 : Th = change(Th, label = r);
+    4 : savemesh(Th, "Th1.msh"); sizestack + 1024 =1280  ( 256 )
  
   -- Square mesh : nb vertices  =25 ,  nb triangles = 32 ,  nb boundary edges 16
-25
-          1       1       1       1       1
-          1       1       1       1       1
-          1       1       1       1       1
-          1       1       1       1       1
-          1       1       1       1       1
- 
-times: compile 0.045s, execution 0.007s,  mpirank:0
- ######## We forget of deleting   16 Nb pointer,   0Bytes  ,  mpirank 0, memory leak =0
- CodeAlloc : nb ptr  2771,  size :373960 mpirank: 0
+  number of required edges : 0
+times: compile 0.124s, execution 0.019s,  mpirank:0
+ ######## We forget of deleting   21 Nb pointer,   0Bytes  ,  mpirank 0, memory leak =0
+ CodeAlloc : nb ptr  2729,  size :372728 mpirank: 0
 Ok: Normal End
  try getConsole D:\Study\Projects\XNM\code\test.edp

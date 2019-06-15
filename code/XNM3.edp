@@ -80,6 +80,9 @@ for(real t = dt; t <= T; t += dt){
         + int1d(Th, 2)((n < 0) * abs(n) * (etaUB - zh) * phi);
     
     mesh Thwet = trunc(Th, H >= eps);
+    // func  newlabel = (H >= eps && label == 0) ? 1 : label; 
+    // Thwet = change(Thwet, flabel = newlabel);
+    // savemesh(Thwet, foldername + "Thwet.msh");
 
     ofstream wf(foldername + "Thwet.msh");
     wf.fixed;
@@ -105,7 +108,10 @@ for(real t = dt; t <= T; t += dt){
     }
 
     for(int i = 0; i < Thwet.nbe; i++){
-        wf << Thwet.be(i)[0] + 1 << " " << Thwet.be(i)[1] + 1 << " " << Thwet.be(i).label <<  endl;
+        if (Thwet.be(i)[0].label == 0 || Thwet.be(i)[1].label == 0)
+            wf << Thwet.be(i)[0] + 1 << " " << Thwet.be(i)[1] + 1 << " " << 1 <<  endl;
+        else
+            wf << Thwet.be(i)[0] + 1 << " " << Thwet.be(i)[1] + 1 << " " << Thwet.be(i).label <<  endl;
     }
 
     wf.flush;
@@ -124,7 +130,6 @@ for(real t = dt; t <= T; t += dt){
         Hwet[][i] = H(Thwet(i).x, Thwet(i).y); 
         etawet[][i] = Hwet[][i] + zh(Thwet(i).x, Thwet(i).y);
     }
-    ux = 0; uy = 0; // reset
     
     real uUB = BoundData(0);
     solve NavierStokes([uwx, uwy], [vx, vy], solver = Crout) = 
@@ -139,14 +144,19 @@ for(real t = dt; t <= T; t += dt){
         + int2d(Thwet)((tau * 1/Hwet^(4/3) * (uxold * uxold + uyold * uyold)^(0.5)) * (uwx * vx + uwy * vy))
         + on(2, uwx = uUB, uwy = 0) + on(1, uwx = 0, uwy = 0);
 
-
+    // for (int i = 0; i < Thwet.nv; i++){
+    //     if(Thwet(i).label == 1 && (abs(uwx[][i])>eps || abs(uwy[][i]) > eps)){
+    //         cout << uwx[][i] << " EORROR " << uwy[][i] << endl;
+    //     }
+    // }
+    ux = 0; uy = 0; // reset
     for(int i = 0; i < Thwet.nv; i++){
         ux[][vdof(Thwet(i).x, Thwet(i).y)] = uwx[][i];
         uy[][vdof(Thwet(i).x, Thwet(i).y)] = uwy[][i];
     }
     Hold = H;
     // plot(H, fill = 1, value = 1);
-    plot([ux, uy], fill = 1, value = 1);
+    plot([uwx, uwy], fill = 1, value = 1);
     // medit("Th", Th, [ux, uy]);
 
     savesol(foldername + "ThH." + string(cnt) + ".sol", Th, H);
