@@ -54,7 +54,8 @@ fespace Hh(Th, P1dc);
 Xh zh; zh[] = FillZ(zh[]);
 Hh H, phi, Hold = 9 - zh;
 Xh ux = 0.5, uy = 0.0;
-
+Xh vdof;
+vdof[] = 0 : Xh.ndof-1;
 int cnt = 0;
 string foldername = "result3/";
 
@@ -110,29 +111,34 @@ for(real t = dt; t <= T; t += dt){
 
     fespace Xhwet(Thwet, P1);
     Xhwet uwx, uwy, vx, vy;
-    Xhwet uxold = 0.5, uyold = 0;
+    Xhwet uxold, uyold;
     Xhwet etawet, Hwet;
 
     for(int i = 0; i < Thwet.nv; i++){
-        // cout << "i = " << i + 2 << ": ";
-        int it = Th(Thwet(i).x, Thwet(i).y).nuTriangle;
-        for (int j = 0; j < 3; j++){
-            if (Thwet(i).x == Th[it][j].x && Thwet(i).y == Th[it][j].y){
-                // cout.fixed << Th[it][j] + 2 << " => " << Th[it][j].x << " " << Th[it][j].y << endl;
-                if (t > dt){
-                    uxold[][i] = ux[][Th[it][j]];
-                    uyold[][i] = uy[][Th[it][j]];
-                }
-                Hwet[][i] = H[][Th[it][j]]; 
-                etawet[][i] = H[][Th[it][j]] + zh[][Th[it][j]];
-                break;
-            }
-        }
+        uxold[][i] = ux(Thwet(i).x, Thwet(i).y);
+        uyold[][i] = uy(Thwet(i).x, Thwet(i).y);
+        Hwet[][i] = H(Thwet(i).x, Thwet(i).y); 
+        etawet[][i] = H(Thwet(i).x, Thwet(i).y) + zh(Thwet(i).x, Thwet(i).y);
+
+
+    //     // cout << "i = " << i + 2 << ": ";
+    //     int it = Th(Thwet(i).x, Thwet(i).y).nuTriangle;
+    //     for (int j = 0; j < 3; j++){
+    //         if (Thwet(i).x == Th[it][j].x && Thwet(i).y == Th[it][j].y){
+    //             // cout.fixed << Th[it][j] + 2 << " => " << Th[it][j].x << " " << Th[it][j].y << endl;
+    //             uxold[][i] = ux[][Th[it][j]];
+    //             uyold[][i] = uy[][Th[it][j]];
+    //             Hwet[][i] = H[][Th[it][j]]; 
+    //             etawet[][i] = H[][Th[it][j]] + zh[][Th[it][j]];
+    //             break;
+    //         }
+    //     }
     }
+    // cout << uxold[] << endl;
     ux = 0; uy = 0; // reset
     
     // Xhwet eta = H + zh;
-    // Xhwet uUB = BoundData(0);
+    real uUB = BoundData(0);
     // cout << uUB[] << endl;
     solve NavierStokes([uwx, uwy], [vx, vy], solver = Crout) = 
         int2d(Thwet)((uwx * vx + uwy * vy) / dt)
@@ -144,18 +150,22 @@ for(real t = dt; t <= T; t += dt){
         // - int2d(Thwet)(g * eta * Div(vx, vy))
         - int2d(Thwet)(nu / Hwet * [vx, vy]' * Grad2(uwx, uwy) * Grad(Hwet) - nu * Grad1(uwx, uwy)' * Grad1(vx, vy))
         + int2d(Thwet)((tau * 1/Hwet^(4/3) * (uxold * uxold + uyold * uyold)^(0.5)) * (uwx * vx + uwy * vy))
-        + on(2, uwx = BoundData(0), uwy = 0) + on(1, uwx = 0, uwy = 0);
+        + on(2, uwx = uUB, uwy = 0) + on(1, uwx = 0, uwy = 0);
 
-    
+
     for(int i = 0; i < Thwet.nv; i++){
-        int it = Th(Thwet(i).x, Thwet(i).y).nuTriangle;
-        for (int j = 0; j < 3; j++){
-            if (Thwet(i).x == Th[it][j].x && Thwet(i).y == Th[it][j].y){
-                ux[][Th[it][j]] = uwx[][i];
-                uy[][Th[it][j]] = uwy[][i];
-                break;
-            }
-        }
+        ux[][vdof(Thwet(i).x, Thwet(i).y)] = uwx[][i];
+        uy[][vdof(Thwet(i).x, Thwet(i).y)] = uwy[][i];
+        // ux(Thwet(i).x, Thwet(i).y) = uwx[][i];
+        // uy(Thwet(i).x, Thwet(i).y) = uwy[][i];
+        // int it = Th(Thwet(i).x, Thwet(i).y).nuTriangle;
+        // for (int j = 0; j < 3; j++){
+        //     if (Thwet(i).x == Th[it][j].x && Thwet(i).y == Th[it][j].y){
+        //         ux[][Th[it][j]] = uwx[][i];
+        //         uy[][Th[it][j]] = uwy[][i];
+        //         break;
+        //     }
+        // }
     }
     Hold = H;
     // plot(H, fill = 1, value = 1);

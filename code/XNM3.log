@@ -1,4 +1,7 @@
--- FreeFem++ v  3.610001 (date jeu. 12 juil. 2018 15:05:23)
+ 
+D:\Study\Projects\XNM\code>XNM3.edp
+ 
+D:\Study\Projects\XNM\code>-- FreeFem++ v  3.610001 (date jeu. 12 juil. 2018 15:05:23)
  Load: lg_fem lg_mesh lg_mesh3 eigenvalue
     1 : load "medit"(load: loadLibary C:\Program Files (x86)\FreeFem++\\.\medit = 0)
     2 :
@@ -56,194 +59,139 @@
    54 : Xh zh; zh[] = FillZ(zh[]);
    55 : Hh H, phi, Hold = 9 - zh;
    56 : Xh ux = 0.5, uy = 0.0;
-   57 :
-   58 : int cnt = 0;
-   59 : string foldername = "result3/";
-   60 :
-   61 : for(real t = dt; t <= T; t += dt){
-   62 :     cout << "t: " << t << endl;
-   63 :     real[int] BoundData = InterpolationData(t);
-   64 :     real etaUB = BoundData(1);
-   65 :     // Xh etaUB1 = BoundData(2);
-   66 :     // Xh etaUB2 = BoundData(3);
-   67 :
-   68 :     real al = 0.5;
-   69 :     macro n() (N.x * ux + N.y * uy)  (N.x * ux + N.y * uy) //
-   70 :     solve TransportEquation(H, phi) =
-   71 :         int2d(Th)((H/dt + ux * dx(H) + uy * dy(H) + H * Div(ux, uy)     (dx(ux) + dy( uy)) ) * phi)
-   72 :         + intalledges(Th)((1 - nTonEdge) * phi * (al * abs(n         (N.x * ux + N.y * uy) ) - n         (N.x *
-È™ßt±Ë?ux + N.y * uy) /2) *  jump(H))
-   73 :         - int1d(Th, 2)((n         (N.x * ux + N.y * uy)  < 0) * abs(n         (N.x * ux + N.y * uy) ) * H * phi)È™ßt±Ë? 
-   74 :         - int2d(Th)(Hold * phi / dt)
-   75 :         + int1d(Th, 2)((n         (N.x * ux + N.y * uy)  < 0) * abs(n         (N.x * ux + N.y * uy) ) * (etaUB -È™ßt±Ë? zh) * phi);
-   76 :
-   77 :     mesh Thwet = trunc(Th, H >= eps);
-   78 :
-   79 :     ofstream wf(foldername + "Thwet.msh");
-   80 :     wf.fixed;
-   81 :     wf << Thwet.nv << " " << Thwet.nt << " " << Thwet.nbe << endl;
-   82 :
-   83 :     for(int i = 0; i < Thwet.nv; i++){
-   84 :         int check = 0;
-   85 :         for (int j = 0; j < Thwet.nbe; j++){
-   86 :             if ((i == Thwet.be(j)[0] || i == Thwet.be(j)[1]) && (Thwet(i).label == 0)){
-   87 :                 check = 1;
-   88 :                 break;
-   89 :             }
-   90 :         }
-   91 :         if (check == 1){
-   92 :             wf << Thwet(i).x << " " << Thwet(i).y << " " << 1 << endl;
-   93 :         } else {
-   94 :             wf << Thwet(i).x << " " << Thwet(i).y << " " << Thwet(i).label << endl;
-   95 :         }
-   96 :     }
-   97 :
-   98 :     for (int i = 0; i < Thwet.nt; i++){
-   99 :         wf << Thwet[i][0] + 1 << " " << Thwet[i][1]  + 1 << " " << Thwet[i][2]  + 1 << " " << Thwet[i].label <<
-È™ßt±Ë?endl;
-  100 :     }
-  101 :
-  102 :     for(int i = 0; i < Thwet.nbe; i++){
-  103 :         wf << Thwet.be(i)[0] + 1 << " " << Thwet.be(i)[1] + 1 << " " << Thwet.be(i).label <<  endl;
-  104 :     }
-  105 :
-  106 :     wf.flush;
-  107 :
-  108 :     Thwet = readmesh(foldername + "Thwet.msh");
-  109 :     // medit("Thwet", Thwet);
-  110 :
-  111 :     fespace Xhwet(Thwet, P1);
-  112 :     Xhwet uwx, uwy, vx, vy;
-  113 :     Xhwet uxold = 0.5, uyold = 0;
-  114 :     Xhwet etawet, Hwet;
-  115 :
-  116 :     for(int i = 0; i < Thwet.nv; i++){
-  117 :         // cout << "i = " << i + 2 << ": ";
-  118 :         int it = Th(Thwet(i).x, Thwet(i).y).nuTriangle;
-  119 :         for (int j = 0; j < 3; j++){
-  120 :             if (Thwet(i).x == Th[it][j].x && Thwet(i).y == Th[it][j].y){
-  121 :                 // cout.fixed << Th[it][j] + 2 << " => " << Th[it][j].x << " " << Th[it][j].y << endl;
-  122 :                 if (t > dt){
-  123 :                     uxold[][i] = ux[][Th[it][j]];
-  124 :                     uyold[][i] = uy[][Th[it][j]];
-  125 :                 }
-  126 :                 Hwet[][i] = H[][Th[it][j]];
-  127 :                 etawet[][i] = H[][Th[it][j]] + zh[][Th[it][j]];
-  128 :                 break;
-  129 :             }
-  130 :         }
-  131 :     }
-  132 :     ux = 0; uy = 0; // reset
-  133 :
-  134 :     // Xhwet eta = H + zh;
-  135 :     // Xhwet uUB = BoundData(0);
-  136 :     // cout << uUB[] << endl;
-  137 :     solve NavierStokes([uwx, uwy], [vx, vy], solver = Crout) =
-  138 :         int2d(Thwet)((uwx * vx + uwy * vy) / dt)
-  139 :         - int2d(Thwet)(
-  140 :               convect([uxold, uyold], -dt, uxold) * vx / dt
-  141 :             + convect([uxold, uyold], -dt, uyold) * vy / dt
-  142 :         )
-  143 :         + int2d(Thwet)(g * Grad(etawet)    [dx(etawet), dy(etawet)] ' * [vx, vy])
-  144 :         // - int2d(Thwet)(g * eta * Div(vx, vy))
-  145 :         - int2d(Thwet)(nu / Hwet * [vx, vy]' * Grad2(uwx, uwy)      [[dx(uwx), dy(uwx)], [dx( uwy), dy( uwy)]]
-* Grad(Hwet)    [dx(Hwet), dy(Hwet)]  - nu * Grad1(uwx, uwy)      [dx(uwx), dy(uwx), dx( uwy), dy( uwy)] ' * Grad1(vx, vÈ™ßt±Ë?y)      [dx(vx), dy(vx), dx( vy), dy( vy)] )
-  146 :         + int2d(Thwet)((tau * 1/Hwet^(4/3) * (uxold * uxold + uyold * uyold)^(0.5)) * (uwx * vx + uwy * vy))
-  147 :         + on(2, uwx = BoundData(0), uwy = 0) + on(1, uwx = 0, uwy = 0);
-  148 :
-  149 :
-  150 :     for(int i = 0; i < Thwet.nv; i++){
-  151 :         int it = Th(Thwet(i).x, Thwet(i).y).nuTriangle;
-  152 :         for (int j = 0; j < 3; j++){
-  153 :             if (Thwet(i).x == Th[it][j].x && Thwet(i).y == Th[it][j].y){
-  154 :                 ux[][Th[it][j]] = uwx[][i];
-  155 :                 uy[][Th[it][j]] = uwy[][i];
-  156 :                 break;
-  157 :             }
-  158 :         }
-  159 :     }
-  160 :     Hold = H;
-  161 :     // plot(H, fill = 1, value = 1);
-  162 :     plot([ux, uy], fill = 1, value = 1);
-  163 :     // medit("Th", Th, [ux, uy]);
-  164 :
-  165 :     savesol(foldername + "ThH." + string(cnt) + ".sol", Th, H);
-  166 :         savemesh(Th, foldername + "ThH." + string(cnt)+".mesh");
-  167 :     savesol(foldername + "ThU." + string(cnt) + ".sol", Th, [ux, uy]);
-  168 :         savemesh(Th, foldername + "ThU." + string(cnt)+".mesh");
-  169 :     cnt += 1;
-  170 : }
-  171 : savemesh(Th, foldername + "ThH.mesh");
-  172 : savemesh(Th, foldername + "ThU.mesh"); sizestack + 1024 =12928  ( 11904 )
- 
-  --  mesh:  Nb of Triangles =  12657, Nb of Vertices 6718
-t: 0.01
-  -- Solve :
-          min -8.17135  max 25.4135
-  --  mesh:  Nb of Triangles =   7956, Nb of Vertices 4684
- kk 2 3 :   -- Solve :
-          min -2.39566e-025  max 0.734635
-          min -0.029232  max 0.0285035
-  number of required edges : 0
- write geo in result3/ThH.0.mesh.gmsh
-  number of required edges : 0
- write geo in result3/ThU.0.mesh.gmsh
-t: 0.02
-  -- Solve :
-          min -8.17135  max 25.4131
-  --  mesh:  Nb of Triangles =   7956, Nb of Vertices 4684
- kk 2 3 :   -- Solve :
-          min -2.40468e-025  max 0.744326
-          min -0.0584635  max 0.0570064
-  number of required edges : 0
- write geo in result3/ThH.1.mesh.gmsh
-  number of required edges : 0
- write geo in result3/ThU.1.mesh.gmsh
-t: 0.03
-  -- Solve :
-          min -8.17135  max 25.4127
-  --  mesh:  Nb of Triangles =   7956, Nb of Vertices 4684
- kk 2 3 :   -- Solve :
-          min -2.4137e-025  max 0.754017
-          min -0.0876947  max 0.0855086
-  number of required edges : 0
- write geo in result3/ThH.2.mesh.gmsh
-  number of required edges : 0
- write geo in result3/ThU.2.mesh.gmsh
-t: 0.04
-  -- Solve :
-          min -8.17135  max 25.4124
-  --  mesh:  Nb of Triangles =   7956, Nb of Vertices 4684
- kk 2 3 :   -- Solve :
-          min -2.42272e-025  max 0.763707
-          min -0.116925  max 0.11401
-  number of required edges : 0
- write geo in result3/ThH.3.mesh.gmsh
-  number of required edges : 0
- write geo in result3/ThU.3.mesh.gmsh
-t: 0.05
-  -- Solve :
-          min -8.17135  max 25.4121
-  --  mesh:  Nb of Triangles =   7956, Nb of Vertices 4684
- kk 2 3 :   -- Solve :
-          min -2.43174e-025  max 0.773396
-          min -0.146156  max 0.142511
-  number of required edges : 0
- write geo in result3/ThH.4.mesh.gmsh
-  number of required edges : 0
- write geo in result3/ThU.4.mesh.gmsh
-t: 0.06
-  -- Solve :
-          min -8.17135  max 25.4124
-  --  mesh:  Nb of Triangles =   7956, Nb of Vertices 4684
- kk 2 3 :   -- Solve :
-          min -2.44076e-025  max 0.783085
-          min -0.175386  max 0.171011
-  number of required edges : 0
- write geo in result3/ThH.5.mesh.gmsh
-  number of required edges : 0
- write geo in result3/ThU.5.mesh.gmsh
-t: 0.07
-  -- Solve :
-          min -8.17135  max 25.4135
+   57 : Xh vdof;
+   58 : vdof[] = 0 : Xh.ndof-1;
+   59 : int cnt = 0;
+   60 : string foldername = "result3/";
+   61 :
+   62 : for(real t = dt; t <= T; t += dt){
+   63 :     cout << "t: " << t << endl;
+   64 :     real[int] BoundData = InterpolationData(t);
+   65 :     real etaUB = BoundData(1);
+   66 :     // Xh etaUB1 = BoundData(2);
+   67 :     // Xh etaUB2 = BoundData(3);
+   68 :
+   69 :     real al = 0.5;
+   70 :     macro n() (N.x * ux + N.y * uy)  (N.x * ux + N.y * uy) //
+   71 :     solve TransportEquation(H, phi) =
+   72 :         int2d(Th)((H/dt + ux * dx(H) + uy * dy(H) + H * Div(ux, uy)     (dx(ux) + dy( uy)) ) * phi)
+   73 :         + intalledges(Th)((1 - nTonEdge) * phi * (al * abs(n         (N.x * ux + N.y * uy) ) - n         (N.x * ux + N.y * uy) /2) *  jump(H))
+   74 :         - int1d(Th, 2)((n         (N.x * ux + N.y * uy)  < 0) * abs(n         (N.x * ux + N.y * uy) ) * H * phi)
+   75 :         - int2d(Th)(Hold * phi / dt)
+   76 :         + int1d(Th, 2)((n         (N.x * ux + N.y * uy)  < 0) * abs(n         (N.x * ux + N.y * uy) ) * (etaUB - zh) * phi);
+   77 :
+   78 :     mesh Thwet = trunc(Th, H >= eps);
+   79 :
+   80 :     ofstream wf(foldername + "Thwet.msh");
+   81 :     wf.fixed;
+   82 :     wf << Thwet.nv << " " << Thwet.nt << " " << Thwet.nbe << endl;
+   83 :
+   84 :     for(int i = 0; i < Thwet.nv; i++){
+   85 :         int check = 0;
+   86 :         for (int j = 0; j < Thwet.nbe; j++){
+   87 :             if ((i == Thwet.be(j)[0] || i == Thwet.be(j)[1]) && (Thwet(i).label == 0)){
+   88 :                 check = 1;
+   89 :                 break;
+   90 :             }
+   91 :         }
+   92 :         if (check == 1){
+   93 :             wf << Thwet(i).x << " " << Thwet(i).y << " " << 1 << endl;
+   94 :         } else {
+   95 :             wf << Thwet(i).x << " " << Thwet(i).y << " " << Thwet(i).label << endl;
+   96 :         }
+   97 :     }
+   98 :
+   99 :     for (int i = 0; i < Thwet.nt; i++){
+  100 :         wf << Thwet[i][0] + 1 << " " << Thwet[i][1]  + 1 << " " << Thwet[i][2]  + 1 << " " << Thwet[i].label << endl;
+  101 :     }
+  102 :
+  103 :     for(int i = 0; i < Thwet.nbe; i++){
+  104 :         wf << Thwet.be(i)[0] + 1 << " " << Thwet.be(i)[1] + 1 << " " << Thwet.be(i).label <<  endl;
+  105 :     }
+  106 :
+  107 :     wf.flush;
+  108 :
+  109 :     Thwet = readmesh(foldername + "Thwet.msh");
+  110 :     // medit("Thwet", Thwet);
+  111 :
+  112 :     fespace Xhwet(Thwet, P1);
+  113 :     Xhwet uwx, uwy, vx, vy;
+  114 :     Xhwet uxold, uyold;
+  115 :     Xhwet etawet, Hwet;
+  116 :
+  117 :     for(int i = 0; i < Thwet.nv; i++){
+  118 :         uxold[][i] = ux(Thwet(i).x, Thwet(i).y);
+  119 :         uyold[][i] = uy(Thwet(i).x, Thwet(i).y);
+  120 :         Hwet[][i] = H(Thwet(i).x, Thwet(i).y);
+  121 :         etawet[][i] = H(Thwet(i).x, Thwet(i).y) + zh(Thwet(i).x, Thwet(i).y);
+  122 :
+  123 :
+  124 :     //     // cout << "i = " << i + 2 << ": ";
+  125 :     //     int it = Th(Thwet(i).x, Thwet(i).y).nuTriangle;
+  126 :     //     for (int j = 0; j < 3; j++){
+  127 :     //         if (Thwet(i).x == Th[it][j].x && Thwet(i).y == Th[it][j].y){
+  128 :     //             // cout.fixed << Th[it][j] + 2 << " => " << Th[it][j].x << " " << Th[it][j].y << endl;
+  129 :     //             uxold[][i] = ux[][Th[it][j]];
+  130 :     //             uyold[][i] = uy[][Th[it][j]];
+  131 :     //             Hwet[][i] = H[][Th[it][j]];
+  132 :     //             etawet[][i] = H[][Th[it][j]] + zh[][Th[it][j]];
+  133 :     //             break;
+  134 :     //         }
+  135 :     //     }
+  136 :     // }
+  137 :     // cout << uxold[] << endl;
+  138 :     ux = 0; uy = 0; // reset
+  139 :
+  140 :     // Xhwet eta = H + zh;
+  141 :     real uUB = BoundData(0);
+  142 :     // cout << uUB[] << endl;
+  143 :     solve NavierStokes([uwx, uwy], [vx, vy], solver = Crout) =
+  144 :         int2d(Thwet)((uwx * vx + uwy * vy) / dt)
+  145 :         - int2d(Thwet)(
+  146 :               convect([uxold, uyold], -dt, uxold) * vx / dt
+  147 :             + convect([uxold, uyold], -dt, uyold) * vy / dt
+  148 :         )
+  149 :         + int2d(Thwet)(g * Grad(etawet)    [dx(etawet), dy(etawet)] ' * [vx, vy])
+  150 :         // - int2d(Thwet)(g * eta * Div(vx, vy))
+  151 :         - int2d(Thwet)(nu / Hwet * [vx, vy]' * Grad2(uwx, uwy)      [[dx(uwx), dy(uwx)], [dx( uwy), dy( uwy)]]  * Grad(Hwet)    [dx(Hwet), dy(Hwet)]  -
+nu * Grad1(uwx, uwy)      [dx(uwx), dy(uwx), dx( uwy), dy( uwy)] ' * Grad1(vx, vy)      [dx(vx), dy(vx), dx( vy), dy( vy)] )
+  152 :         + int2d(Thwet)((tau * 1/Hwet^(4/3) * (uxold * uxold + uyold * uyold)^(0.5)) * (uwx * vx + uwy * vy))
+  153 :         + on(2, uwx = uUB, uwy = 0) + on(1, uwx = 0, uwy = 0);
+  154 :
+  155 :
+  156 :     for(int i = 0; i < Thwet.nv; i++){
+  157 :         ux[][vdof(Thwet(i).x, Thwet(i).y)] = uwx[][i];
+  158 :         uy[][vdof(Thwet(i).x, Thwet(i).y)] = uwy[][i];
+  159 :         // ux(Thwet(i).x, Thwet(i).y) = uwx[][i];
+  160 :         // uy(Thwet(i).x, Thwet(i).y) = uwy[][i];
+  161 :         // int it = Th(Thwet(i).x, Thwet(i).y).nuTriangle;
+  162 :         // for (int j = 0; j < 3; j++){
+  163 :         //     if (Thwet(i).x == Th[it][j].x && Thwet(i).y == Th[it][j].y){
+  164 :         //         ux[][Th[it][j]] = uwx[][i];
+  165 :         //         uy[][Th[it][j]] = uwy[][i];
+  166 :         //         break;
+  167 :         //     }
+  168 :         // }
+  169 :     }
+  170 :     Hold = H;
+  171 :     // plot(H, fill = 1, value = 1);
+  172 :     plot([ux, uy], fill = 1, value = 1);
+  173 :     // medit("Th", Th, [ux, uy]);
+  174 :
+  175 :     savesol(foldername + "ThH." + string(cnt) + ".sol", Th, H);
+  176 :         savemesh(Th, foldername + "ThH." + string(cnt)+".mesh");
+  177 :     savesol(foldername + "ThU." + string(cnt) + ".sol", Th, [ux, uy]);
+  178 :         savemesh(Th, foldername + "ThU." + string(cnt)+".mesh");
+  179 :     cnt += 1;
+  180 : }
+  181 : savemesh(Th, foldername + "ThH.mesh");
+  182 : savemesh(Th, foldername + "ThU.mesh");
+ Error line number 182, in file -- unkown --, before  token
+syntax error
+  current line = 182
+Compile error : syntax error
+        line number :182,
+error Compile error : syntax error
+        line number :182,
+ code = 1 mpirank: 0
  try getConsole D:\Study\Projects\XNM\code\XNM3.edp
