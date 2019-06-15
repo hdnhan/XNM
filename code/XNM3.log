@@ -1,7 +1,4 @@
- 
-D:\Study\Projects\XNM\code>XNM3.edp
- 
-D:\Study\Projects\XNM\code>-- FreeFem++ v  3.610001 (date jeu. 12 juil. 2018 15:05:23)
+-- FreeFem++ v  3.610001 (date jeu. 12 juil. 2018 15:05:23)
  Load: lg_fem lg_mesh lg_mesh3 eigenvalue
     1 : load "medit"(load: loadLibary C:\Program Files (x86)\FreeFem++\\.\medit = 0)
     2 :
@@ -75,10 +72,11 @@ D:\Study\Projects\XNM\code>-- FreeFem++ v  3.610001 (date jeu. 12 juil. 2018 15:
    70 :     macro n() (N.x * ux + N.y * uy)  (N.x * ux + N.y * uy) //
    71 :     solve TransportEquation(H, phi) =
    72 :         int2d(Th)((H/dt + ux * dx(H) + uy * dy(H) + H * Div(ux, uy)     (dx(ux) + dy( uy)) ) * phi)
-   73 :         + intalledges(Th)((1 - nTonEdge) * phi * (al * abs(n         (N.x * ux + N.y * uy) ) - n         (N.x * ux + N.y * uy) /2) *  jump(H))
-   74 :         - int1d(Th, 2)((n         (N.x * ux + N.y * uy)  < 0) * abs(n         (N.x * ux + N.y * uy) ) * H * phi)
+   73 :         + intalledges(Th)((1 - nTonEdge) * phi * (al * abs(n         (N.x * ux + N.y * uy) ) - n         (N.x *
+»ôﬂt±À?ux + N.y * uy) /2) *  jump(H))
+   74 :         - int1d(Th, 2)((n         (N.x * ux + N.y * uy)  < 0) * abs(n         (N.x * ux + N.y * uy) ) * H * phi)»ôﬂt±À? 
    75 :         - int2d(Th)(Hold * phi / dt)
-   76 :         + int1d(Th, 2)((n         (N.x * ux + N.y * uy)  < 0) * abs(n         (N.x * ux + N.y * uy) ) * (etaUB - zh) * phi);
+   76 :         + int1d(Th, 2)((n         (N.x * ux + N.y * uy)  < 0) * abs(n         (N.x * ux + N.y * uy) ) * (etaUB -»ôﬂt±À? zh) * phi);
    77 :
    78 :     mesh Thwet = trunc(Th, H >= eps);
    79 :
@@ -102,7 +100,8 @@ D:\Study\Projects\XNM\code>-- FreeFem++ v  3.610001 (date jeu. 12 juil. 2018 15:
    97 :     }
    98 :
    99 :     for (int i = 0; i < Thwet.nt; i++){
-  100 :         wf << Thwet[i][0] + 1 << " " << Thwet[i][1]  + 1 << " " << Thwet[i][2]  + 1 << " " << Thwet[i].label << endl;
+  100 :         wf << Thwet[i][0] + 1 << " " << Thwet[i][1]  + 1 << " " << Thwet[i][2]  + 1 << " " << Thwet[i].label <<
+»ôﬂt±À?endl;
   101 :     }
   102 :
   103 :     for(int i = 0; i < Thwet.nbe; i++){
@@ -138,7 +137,7 @@ D:\Study\Projects\XNM\code>-- FreeFem++ v  3.610001 (date jeu. 12 juil. 2018 15:
   133 :     //             break;
   134 :     //         }
   135 :     //     }
-  136 :     // }
+  136 :     }
   137 :     // cout << uxold[] << endl;
   138 :     ux = 0; uy = 0; // reset
   139 :
@@ -153,8 +152,8 @@ D:\Study\Projects\XNM\code>-- FreeFem++ v  3.610001 (date jeu. 12 juil. 2018 15:
   148 :         )
   149 :         + int2d(Thwet)(g * Grad(etawet)    [dx(etawet), dy(etawet)] ' * [vx, vy])
   150 :         // - int2d(Thwet)(g * eta * Div(vx, vy))
-  151 :         - int2d(Thwet)(nu / Hwet * [vx, vy]' * Grad2(uwx, uwy)      [[dx(uwx), dy(uwx)], [dx( uwy), dy( uwy)]]  * Grad(Hwet)    [dx(Hwet), dy(Hwet)]  -
-nu * Grad1(uwx, uwy)      [dx(uwx), dy(uwx), dx( uwy), dy( uwy)] ' * Grad1(vx, vy)      [dx(vx), dy(vx), dx( vy), dy( vy)] )
+  151 :         - int2d(Thwet)(nu / Hwet * [vx, vy]' * Grad2(uwx, uwy)      [[dx(uwx), dy(uwx)], [dx( uwy), dy( uwy)]]
+* Grad(Hwet)    [dx(Hwet), dy(Hwet)]  - nu * Grad1(uwx, uwy)      [dx(uwx), dy(uwx), dx( uwy), dy( uwy)] ' * Grad1(vx, v»ôﬂt±À?y)      [dx(vx), dy(vx), dx( vy), dy( vy)] )
   152 :         + int2d(Thwet)((tau * 1/Hwet^(4/3) * (uxold * uxold + uyold * uyold)^(0.5)) * (uwx * vx + uwy * vy))
   153 :         + on(2, uwx = uUB, uwy = 0) + on(1, uwx = 0, uwy = 0);
   154 :
@@ -185,13 +184,30 @@ nu * Grad1(uwx, uwy)      [dx(uwx), dy(uwx), dx( uwy), dy( uwy)] ' * Grad1(vx, v
   179 :     cnt += 1;
   180 : }
   181 : savemesh(Th, foldername + "ThH.mesh");
-  182 : savemesh(Th, foldername + "ThU.mesh");
- Error line number 182, in file -- unkown --, before  token
-syntax error
-  current line = 182
-Compile error : syntax error
-        line number :182,
-error Compile error : syntax error
-        line number :182,
- code = 1 mpirank: 0
- try getConsole D:\Study\Projects\XNM\code\XNM3.edp
+  182 : savemesh(Th, foldername + "ThU.mesh"); sizestack + 1024 =12688  ( 11664 )
+ 
+  --  mesh:  Nb of Triangles =  12657, Nb of Vertices 6718
+t: 0.01
+  -- Solve :
+          min -8.17135  max 25.4135
+  --  mesh:  Nb of Triangles =   7956, Nb of Vertices 4684
+ kk 2 3 :   -- Solve :
+          min -2.38656e-025  max 0.724939
+          min -1.03441e-006  max 1.17519e-006
+  number of required edges : 0
+ write geo in result3/ThH.0.mesh.gmsh
+  number of required edges : 0
+ write geo in result3/ThU.0.mesh.gmsh
+t: 0.02
+  -- Solve :
+          min -8.17135  max 25.413
+  --  mesh:  Nb of Triangles =   7956, Nb of Vertices 4684
+ kk 2 3 :   -- Solve :
+          min -2.38659e-025  max 0.724934
+          min -3.10867e-006  max 3.2549e-006
+  number of required edges : 0
+ write geo in result3/ThH.1.mesh.gmsh
+  number of required edges : 0
+ write geo in result3/ThU.1.mesh.gmsh
+t: 0.03
+^C try getConsole D:\Study\Projects\XNM\code\XNM3.edp

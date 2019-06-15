@@ -59,6 +59,9 @@ vdof[] = 0 : Xh.ndof-1;
 int cnt = 0;
 string foldername = "result3/";
 
+savemesh(Th, foldername + "ThH.mesh");
+savemesh(Th, foldername + "ThU.mesh");
+
 for(real t = dt; t <= T; t += dt){
     cout << "t: " << t << endl;
     real[int] BoundData = InterpolationData(t);
@@ -178,5 +181,3 @@ for(real t = dt; t <= T; t += dt){
 	savemesh(Th, foldername + "ThU." + string(cnt)+".mesh");
     cnt += 1;
 }
-savemesh(Th, foldername + "ThH.mesh");
-savemesh(Th, foldername + "ThU.mesh");
