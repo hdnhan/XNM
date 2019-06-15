@@ -3,7 +3,7 @@
     1 : load "medit"(load: loadLibary C:\Program Files (x86)\FreeFem++\\.\medit = 0)
     2 :
     3 : string path = "data/";
-    4 : int nthfile = 2;
+    4 : int nthfile = 3;
     5 : string filemesh = "Th" + nthfile;
     6 : mesh Th = readmesh(path + filemesh + ".msh");
     7 :
@@ -34,10 +34,10 @@
    32 :     int n = t /  T;
    33 :     real delt = t / T - n;
    34 :     real[int] res(4);
-   35 :     res(0) = data(n, 0) * delt + data(n + 1, 0) * (1 - delt);
-   36 :     res(1) = data(n, 1) * delt + data(n + 1, 1) * (1 - delt);
-   37 :     res(2) = data(n, 2) * delt + data(n + 1, 2) * (1 - delt);
-   38 :     res(3) = data(n, 3) * delt + data(n + 1, 3) * (1 - delt);
+   35 :     res(0) = data(n + 1, 0) * delt + data(n, 0) * (1 - delt);
+   36 :     res(1) = data(n + 1, 1) * delt + data(n, 1) * (1 - delt);
+   37 :     res(2) = data(n + 1, 2) * delt + data(n, 2) * (1 - delt);
+   38 :     res(3) = data(n + 1, 3) * delt + data(n, 3) * (1 - delt);
    39 :     return res;
    40 : }
    41 :
@@ -63,9 +63,9 @@
    61 : for(real t = dt; t <= T; t += dt){
    62 :     cout << "t: " << t << endl;
    63 :     real[int] BoundData = InterpolationData(t);
-   64 :     Xh etaUB = BoundData(1);
-   65 :     Xh etaUB1 = BoundData(2);
-   66 :     Xh etaUB2 = BoundData(3);
+   64 :     real etaUB = BoundData(1);
+   65 :     // Xh etaUB1 = BoundData(2);
+   66 :     // Xh etaUB2 = BoundData(3);
    67 :
    68 :     real al = 0.5;
    69 :     macro n() (N.x * ux + N.y * uy)  (N.x * ux + N.y * uy) //
@@ -136,696 +136,114 @@
   132 :     ux = 0; uy = 0; // reset
   133 :
   134 :     // Xhwet eta = H + zh;
-  135 :     Xhwet uUB = BoundData(0);
-  136 :     solve NavierStokes([uwx, uwy], [vx, vy], solver = Crout) =
-  137 :         int2d(Thwet)((uwx * vx + uwy * vy) / dt)
-  138 :         - int2d(Thwet)(
-  139 :               convect([uxold, uyold], -dt, uxold) * vx / dt
-  140 :             + convect([uxold, uyold], -dt, uyold) * vy / dt
-  141 :         )
-  142 :         + int2d(Thwet)(g * Grad(etawet)    [dx(etawet), dy(etawet)] ' * [vx, vy])
-  143 :         // - int2d(Thwet)(g * eta * Div(vx, vy))
-  144 :         - int2d(Thwet)(nu / Hwet * [vx, vy]' * Grad2(uwx, uwy)      [[dx(uwx), dy(uwx)], [dx( uwy), dy( uwy)]]
+  135 :     // Xhwet uUB = BoundData(0);
+  136 :     // cout << uUB[] << endl;
+  137 :     solve NavierStokes([uwx, uwy], [vx, vy], solver = Crout) =
+  138 :         int2d(Thwet)((uwx * vx + uwy * vy) / dt)
+  139 :         - int2d(Thwet)(
+  140 :               convect([uxold, uyold], -dt, uxold) * vx / dt
+  141 :             + convect([uxold, uyold], -dt, uyold) * vy / dt
+  142 :         )
+  143 :         + int2d(Thwet)(g * Grad(etawet)    [dx(etawet), dy(etawet)] ' * [vx, vy])
+  144 :         // - int2d(Thwet)(g * eta * Div(vx, vy))
+  145 :         - int2d(Thwet)(nu / Hwet * [vx, vy]' * Grad2(uwx, uwy)      [[dx(uwx), dy(uwx)], [dx( uwy), dy( uwy)]]
 * Grad(Hwet)    [dx(Hwet), dy(Hwet)]  - nu * Grad1(uwx, uwy)      [dx(uwx), dy(uwx), dx( uwy), dy( uwy)] ' * Grad1(vx, vÈ™ßt±Ë?y)      [dx(vx), dy(vx), dx( vy), dy( vy)] )
-  145 :         + int2d(Thwet)((tau * 1/Hwet^(4/3) * (uxold * uxold + uyold * uyold)^(0.5)) * (uwx * vx + uwy * vy))
-  146 :         + on(2, uwx = uUB, uwy = 0) + on(1, uwx = 0, uwy = 0);
-  147 :
+  146 :         + int2d(Thwet)((tau * 1/Hwet^(4/3) * (uxold * uxold + uyold * uyold)^(0.5)) * (uwx * vx + uwy * vy))
+  147 :         + on(2, uwx = BoundData(0), uwy = 0) + on(1, uwx = 0, uwy = 0);
   148 :
-  149 :     for(int i = 0; i < Thwet.nv; i++){
-  150 :         int it = Th(Thwet(i).x, Thwet(i).y).nuTriangle;
-  151 :         for (int j = 0; j < 3; j++){
-  152 :             if (Thwet(i).x == Th[it][j].x && Thwet(i).y == Th[it][j].y){
-  153 :                 ux[][Th[it][j]] = uwx[][i];
-  154 :                 uy[][Th[it][j]] = uwy[][i];
-  155 :                 break;
-  156 :             }
-  157 :         }
-  158 :     }
-  159 :     Hold = H;
-  160 :     // plot(H, fill = 1, value = 1);
-  161 :     // plot([ux, uy], fill = 1, value = 1);
-  162 :     // medit("Th", Th, [ux, uy]);
-  163 :
-  164 :     savesol(foldername + "ThH." + string(cnt) + ".sol", Th, H);
-  165 :         savemesh(Th, foldername + "ThH." + string(cnt)+".mesh");
-  166 :     savesol(foldername + "ThU." + string(cnt) + ".sol", Th, [ux, uy]);
-  167 :         savemesh(Th, foldername + "ThU." + string(cnt)+".mesh");
-  168 :     cnt += 1;
-  169 : }
-  170 : savemesh(Th, foldername + "ThH.mesh");
-  171 : savemesh(Th, foldername + "ThU.mesh"); sizestack + 1024 =13496  ( 12472 )
+  149 :
+  150 :     for(int i = 0; i < Thwet.nv; i++){
+  151 :         int it = Th(Thwet(i).x, Thwet(i).y).nuTriangle;
+  152 :         for (int j = 0; j < 3; j++){
+  153 :             if (Thwet(i).x == Th[it][j].x && Thwet(i).y == Th[it][j].y){
+  154 :                 ux[][Th[it][j]] = uwx[][i];
+  155 :                 uy[][Th[it][j]] = uwy[][i];
+  156 :                 break;
+  157 :             }
+  158 :         }
+  159 :     }
+  160 :     Hold = H;
+  161 :     // plot(H, fill = 1, value = 1);
+  162 :     plot([ux, uy], fill = 1, value = 1);
+  163 :     // medit("Th", Th, [ux, uy]);
+  164 :
+  165 :     savesol(foldername + "ThH." + string(cnt) + ".sol", Th, H);
+  166 :         savemesh(Th, foldername + "ThH." + string(cnt)+".mesh");
+  167 :     savesol(foldername + "ThU." + string(cnt) + ".sol", Th, [ux, uy]);
+  168 :         savemesh(Th, foldername + "ThU." + string(cnt)+".mesh");
+  169 :     cnt += 1;
+  170 : }
+  171 : savemesh(Th, foldername + "ThH.mesh");
+  172 : savemesh(Th, foldername + "ThU.mesh"); sizestack + 1024 =12928  ( 11904 )
  
-  --  mesh:  Nb of Triangles =   3214, Nb of Vertices 1802
+  --  mesh:  Nb of Triangles =  12657, Nb of Vertices 6718
 t: 0.01
   -- Solve :
-          min -7.44381  max 20.1458
-  --  mesh:  Nb of Triangles =   2081, Nb of Vertices 1321
+          min -8.17135  max 25.4135
+  --  mesh:  Nb of Triangles =   7956, Nb of Vertices 4684
  kk 2 3 :   -- Solve :
-          min -9.31643e-025  max 0.825171
-          min -0.0118531  max 0.0106345
+          min -2.39566e-025  max 0.734635
+          min -0.029232  max 0.0285035
   number of required edges : 0
  write geo in result3/ThH.0.mesh.gmsh
   number of required edges : 0
  write geo in result3/ThU.0.mesh.gmsh
 t: 0.02
   -- Solve :
-          min -7.44381  max 20.1454
-  --  mesh:  Nb of Triangles =   2081, Nb of Vertices 1321
+          min -8.17135  max 25.4131
+  --  mesh:  Nb of Triangles =   7956, Nb of Vertices 4684
  kk 2 3 :   -- Solve :
-          min -9.31406e-025  max 0.831572
-          min -0.0237094  max 0.0212684
+          min -2.40468e-025  max 0.744326
+          min -0.0584635  max 0.0570064
   number of required edges : 0
  write geo in result3/ThH.1.mesh.gmsh
   number of required edges : 0
  write geo in result3/ThU.1.mesh.gmsh
 t: 0.03
   -- Solve :
-          min -7.44381  max 20.1449
-  --  mesh:  Nb of Triangles =   2081, Nb of Vertices 1321
+          min -8.17135  max 25.4127
+  --  mesh:  Nb of Triangles =   7956, Nb of Vertices 4684
  kk 2 3 :   -- Solve :
-          min -9.34117e-025  max 0.837973
-          min -0.0355688  max 0.0319019
+          min -2.4137e-025  max 0.754017
+          min -0.0876947  max 0.0855086
   number of required edges : 0
  write geo in result3/ThH.2.mesh.gmsh
   number of required edges : 0
  write geo in result3/ThU.2.mesh.gmsh
 t: 0.04
   -- Solve :
-          min -7.44381  max 20.1445
-  --  mesh:  Nb of Triangles =   2081, Nb of Vertices 1321
+          min -8.17135  max 25.4124
+  --  mesh:  Nb of Triangles =   7956, Nb of Vertices 4684
  kk 2 3 :   -- Solve :
-          min -9.3686e-025  max 0.844376
-          min -0.0474316  max 0.0425349
+          min -2.42272e-025  max 0.763707
+          min -0.116925  max 0.11401
   number of required edges : 0
  write geo in result3/ThH.3.mesh.gmsh
   number of required edges : 0
  write geo in result3/ThU.3.mesh.gmsh
 t: 0.05
   -- Solve :
-          min -7.44381  max 20.1442
-  --  mesh:  Nb of Triangles =   2081, Nb of Vertices 1321
+          min -8.17135  max 25.4121
+  --  mesh:  Nb of Triangles =   7956, Nb of Vertices 4684
  kk 2 3 :   -- Solve :
-          min -9.39609e-025  max 0.850778
-          min -0.0592977  max 0.0531674
+          min -2.43174e-025  max 0.773396
+          min -0.146156  max 0.142511
   number of required edges : 0
  write geo in result3/ThH.4.mesh.gmsh
   number of required edges : 0
  write geo in result3/ThU.4.mesh.gmsh
 t: 0.06
   -- Solve :
-          min -7.44381  max 20.1438
-  --  mesh:  Nb of Triangles =   2081, Nb of Vertices 1321
+          min -8.17135  max 25.4124
+  --  mesh:  Nb of Triangles =   7956, Nb of Vertices 4684
  kk 2 3 :   -- Solve :
-          min -9.42357e-025  max 0.857182
-          min -0.0711671  max 0.0637996
+          min -2.44076e-025  max 0.783085
+          min -0.175386  max 0.171011
   number of required edges : 0
  write geo in result3/ThH.5.mesh.gmsh
   number of required edges : 0
  write geo in result3/ThU.5.mesh.gmsh
 t: 0.07
   -- Solve :
-          min -7.44381  max 20.1435
-  --  mesh:  Nb of Triangles =   2081, Nb of Vertices 1321
- kk 2 3 :   -- Solve :
-          min -9.45105e-025  max 0.863586
-          min -0.0830398  max 0.0744313
-  number of required edges : 0
- write geo in result3/ThH.6.mesh.gmsh
-  number of required edges : 0
- write geo in result3/ThU.6.mesh.gmsh
-t: 0.08
-  -- Solve :
-          min -7.44381  max 20.1432
-  --  mesh:  Nb of Triangles =   2081, Nb of Vertices 1321
- kk 2 3 :   -- Solve :
-          min -9.47853e-025  max 0.869992
-          min -0.094916  max 0.0850626
-  number of required edges : 0
- write geo in result3/ThH.7.mesh.gmsh
-  number of required edges : 0
- write geo in result3/ThU.7.mesh.gmsh
-t: 0.09
-  -- Solve :
-          min -7.44381  max 20.1429
-  --  mesh:  Nb of Triangles =   2081, Nb of Vertices 1321
- kk 2 3 :   -- Solve :
-          min -9.50601e-025  max 0.876397
-          min -0.106796  max 0.0956936
-  number of required edges : 0
- write geo in result3/ThH.8.mesh.gmsh
-  number of required edges : 0
- write geo in result3/ThU.8.mesh.gmsh
-t: 0.1
-  -- Solve :
-          min -7.44381  max 20.1426
-  --  mesh:  Nb of Triangles =   2081, Nb of Vertices 1321
- kk 2 3 :   -- Solve :
-          min -9.53349e-025  max 0.882804
-          min -0.118679  max 0.106324
-  number of required edges : 0
- write geo in result3/ThH.9.mesh.gmsh
-  number of required edges : 0
- write geo in result3/ThU.9.mesh.gmsh
-t: 0.11
-  -- Solve :
-          min -7.44381  max 20.1423
-  --  mesh:  Nb of Triangles =   2081, Nb of Vertices 1321
- kk 2 3 :   -- Solve :
-          min -9.56097e-025  max 0.889212
-          min -0.130565  max 0.116954
-  number of required edges : 0
- write geo in result3/ThH.10.mesh.gmsh
-  number of required edges : 0
- write geo in result3/ThU.10.mesh.gmsh
-t: 0.12
-  -- Solve :
-          min -7.44381  max 20.1421
-  --  mesh:  Nb of Triangles =   2081, Nb of Vertices 1321
- kk 2 3 :   -- Solve :
-          min -9.58845e-025  max 0.89562
-          min -0.142455  max 0.127584
-  number of required edges : 0
- write geo in result3/ThH.11.mesh.gmsh
-  number of required edges : 0
- write geo in result3/ThU.11.mesh.gmsh
-t: 0.13
-  -- Solve :
-          min -7.44381  max 20.1419
-  --  mesh:  Nb of Triangles =   2081, Nb of Vertices 1321
- kk 2 3 :   -- Solve :
-          min -9.61594e-025  max 0.902029
-          min -0.154349  max 0.138214
-  number of required edges : 0
- write geo in result3/ThH.12.mesh.gmsh
-  number of required edges : 0
- write geo in result3/ThU.12.mesh.gmsh
-t: 0.14
-  -- Solve :
-          min -7.44381  max 20.1417
-  --  mesh:  Nb of Triangles =   2081, Nb of Vertices 1321
- kk 2 3 :   -- Solve :
-          min -9.64342e-025  max 0.908438
-          min -0.166246  max 0.148843
-  number of required edges : 0
- write geo in result3/ThH.13.mesh.gmsh
-  number of required edges : 0
- write geo in result3/ThU.13.mesh.gmsh
-t: 0.15
-  -- Solve :
-          min -7.44381  max 20.1416
-  --  mesh:  Nb of Triangles =   2081, Nb of Vertices 1321
- kk 2 3 :   -- Solve :
-          min -9.67091e-025  max 0.914849
-          min -0.178148  max 0.159471
-  number of required edges : 0
- write geo in result3/ThH.14.mesh.gmsh
-  number of required edges : 0
- write geo in result3/ThU.14.mesh.gmsh
-t: 0.16
-  -- Solve :
-          min -7.44381  max 20.1414
-  --  mesh:  Nb of Triangles =   2081, Nb of Vertices 1321
- kk 2 3 :   -- Solve :
-          min -9.6984e-025  max 0.92126
-          min -0.190052  max 0.1701
-  number of required edges : 0
- write geo in result3/ThH.15.mesh.gmsh
-  number of required edges : 0
- write geo in result3/ThU.15.mesh.gmsh
-t: 0.17
-  -- Solve :
-          min -7.44381  max 20.1413
-  --  mesh:  Nb of Triangles =   2081, Nb of Vertices 1321
- kk 2 3 :   -- Solve :
-          min -9.72588e-025  max 0.927672
-          min -0.201961  max 0.180728
-  number of required edges : 0
- write geo in result3/ThH.16.mesh.gmsh
-  number of required edges : 0
- write geo in result3/ThU.16.mesh.gmsh
-t: 0.18
-  -- Solve :
-          min -7.44381  max 20.1412
-  --  mesh:  Nb of Triangles =   2081, Nb of Vertices 1321
- kk 2 3 :   -- Solve :
-          min -9.75337e-025  max 0.934085
-          min -0.213873  max 0.191355
-  number of required edges : 0
- write geo in result3/ThH.17.mesh.gmsh
-  number of required edges : 0
- write geo in result3/ThU.17.mesh.gmsh
-t: 0.19
-  -- Solve :
-          min -7.44381  max 20.1412
-  --  mesh:  Nb of Triangles =   2081, Nb of Vertices 1321
- kk 2 3 :   -- Solve :
-          min -9.78087e-025  max 0.940499
-          min -0.22579  max 0.201983
-  number of required edges : 0
- write geo in result3/ThH.18.mesh.gmsh
-  number of required edges : 0
- write geo in result3/ThU.18.mesh.gmsh
-t: 0.2
-  -- Solve :
-          min -7.44381  max 20.1411
-  --  mesh:  Nb of Triangles =   2081, Nb of Vertices 1321
- kk 2 3 :   -- Solve :
-          min -9.80836e-025  max 0.946914
-          min -0.23771  max 0.21261
-  number of required edges : 0
- write geo in result3/ThH.19.mesh.gmsh
-  number of required edges : 0
- write geo in result3/ThU.19.mesh.gmsh
-t: 0.21
-  -- Solve :
-          min -7.44381  max 20.1411
-  --  mesh:  Nb of Triangles =   2081, Nb of Vertices 1321
- kk 2 3 :   -- Solve :
-          min -9.83585e-025  max 0.953329
-          min -0.249634  max 0.223237
-  number of required edges : 0
- write geo in result3/ThH.20.mesh.gmsh
-  number of required edges : 0
- write geo in result3/ThU.20.mesh.gmsh
-t: 0.22
-  -- Solve :
-          min -7.44381  max 20.1411
-  --  mesh:  Nb of Triangles =   2081, Nb of Vertices 1321
- kk 2 3 :   -- Solve :
-          min -9.86335e-025  max 0.959745
-          min -0.261562  max 0.233863
-  number of required edges : 0
- write geo in result3/ThH.21.mesh.gmsh
-  number of required edges : 0
- write geo in result3/ThU.21.mesh.gmsh
-t: 0.23
-  -- Solve :
-          min -7.44381  max 20.1411
-  --  mesh:  Nb of Triangles =   2081, Nb of Vertices 1321
- kk 2 3 :   -- Solve :
-          min -9.89084e-025  max 0.966162
-          min -0.273494  max 0.244489
-  number of required edges : 0
- write geo in result3/ThH.22.mesh.gmsh
-  number of required edges : 0
- write geo in result3/ThU.22.mesh.gmsh
-t: 0.24
-  -- Solve :
-          min -7.44381  max 20.1412
-  --  mesh:  Nb of Triangles =   2081, Nb of Vertices 1321
- kk 2 3 :   -- Solve :
-          min -9.91834e-025  max 0.97258
-          min -0.28543  max 0.255115
-  number of required edges : 0
- write geo in result3/ThH.23.mesh.gmsh
-  number of required edges : 0
- write geo in result3/ThU.23.mesh.gmsh
-t: 0.25
-  -- Solve :
-          min -7.44381  max 20.1413
-  --  mesh:  Nb of Triangles =   2081, Nb of Vertices 1321
- kk 2 3 :   -- Solve :
-          min -9.94584e-025  max 0.978999
-          min -0.297371  max 0.26574
-  number of required edges : 0
- write geo in result3/ThH.24.mesh.gmsh
-  number of required edges : 0
- write geo in result3/ThU.24.mesh.gmsh
-t: 0.26
-  -- Solve :
-          min -7.44381  max 20.1414
-  --  mesh:  Nb of Triangles =   2081, Nb of Vertices 1321
- kk 2 3 :   -- Solve :
-          min -9.97334e-025  max 0.985418
-          min -0.309316  max 0.276365
-  number of required edges : 0
- write geo in result3/ThH.25.mesh.gmsh
-  number of required edges : 0
- write geo in result3/ThU.25.mesh.gmsh
-t: 0.27
-  -- Solve :
-          min -7.44381  max 20.1415
-  --  mesh:  Nb of Triangles =   2082, Nb of Vertices 1321
- kk 2 3 :   -- Solve :
-          min -1.00008e-024  max 0.991838
-          min -0.321265  max 0.28699
-  number of required edges : 0
- write geo in result3/ThH.26.mesh.gmsh
-  number of required edges : 0
- write geo in result3/ThU.26.mesh.gmsh
-t: 0.28
-  -- Solve :
-          min -7.44381  max 20.1416
-  --  mesh:  Nb of Triangles =   2082, Nb of Vertices 1321
- kk 2 3 :   -- Solve :
-          min -1.00283e-024  max 0.998259
-          min -0.333218  max 0.297614
-  number of required edges : 0
- write geo in result3/ThH.27.mesh.gmsh
-  number of required edges : 0
- write geo in result3/ThU.27.mesh.gmsh
-t: 0.29
-  -- Solve :
-          min -7.44381  max 20.1418
-  --  mesh:  Nb of Triangles =   2082, Nb of Vertices 1321
- kk 2 3 :   -- Solve :
-          min -1.00559e-024  max 1.00468
-          min -0.345175  max 0.308239
-  number of required edges : 0
- write geo in result3/ThH.28.mesh.gmsh
-  number of required edges : 0
- write geo in result3/ThU.28.mesh.gmsh
-t: 0.3
-  -- Solve :
-          min -7.44381  max 20.142
-  --  mesh:  Nb of Triangles =   2082, Nb of Vertices 1321
- kk 2 3 :   -- Solve :
-          min -1.00834e-024  max 1.0111
-          min -0.357137  max 0.318862
-  number of required edges : 0
- write geo in result3/ThH.29.mesh.gmsh
-  number of required edges : 0
- write geo in result3/ThU.29.mesh.gmsh
-t: 0.31
-  -- Solve :
-          min -7.44381  max 20.1422
-  --  mesh:  Nb of Triangles =   2082, Nb of Vertices 1321
- kk 2 3 :   -- Solve :
-          min -1.01109e-024  max 1.01753
-          min -0.369104  max 0.329486
-  number of required edges : 0
- write geo in result3/ThH.30.mesh.gmsh
-  number of required edges : 0
- write geo in result3/ThU.30.mesh.gmsh
-t: 0.32
-  -- Solve :
-          min -7.44381  max 20.1424
-  --  mesh:  Nb of Triangles =   2082, Nb of Vertices 1321
- kk 2 3 :   -- Solve :
-          min -1.01384e-024  max 1.02395
-          min -0.381075  max 0.340109
-  number of required edges : 0
- write geo in result3/ThH.31.mesh.gmsh
-  number of required edges : 0
- write geo in result3/ThU.31.mesh.gmsh
-t: 0.33
-  -- Solve :
-          min -7.44381  max 20.1427
-  --  mesh:  Nb of Triangles =   2082, Nb of Vertices 1321
- kk 2 3 :   -- Solve :
-          min -1.01659e-024  max 1.03038
-          min -0.39305  max 0.350731
-  number of required edges : 0
- write geo in result3/ThH.32.mesh.gmsh
-  number of required edges : 0
- write geo in result3/ThU.32.mesh.gmsh
-t: 0.34
-  -- Solve :
-          min -7.44381  max 20.1429
-  --  mesh:  Nb of Triangles =   2082, Nb of Vertices 1321
- kk 2 3 :   -- Solve :
-          min -1.01934e-024  max 1.0368
-          min -0.40503  max 0.361354
-  number of required edges : 0
- write geo in result3/ThH.33.mesh.gmsh
-  number of required edges : 0
- write geo in result3/ThU.33.mesh.gmsh
-t: 0.35
-  -- Solve :
-          min -7.44381  max 20.1432
-  --  mesh:  Nb of Triangles =   2082, Nb of Vertices 1321
- kk 2 3 :   -- Solve :
-          min -1.02209e-024  max 1.04323
-          min -0.417015  max 0.371976
-  number of required edges : 0
- write geo in result3/ThH.34.mesh.gmsh
-  number of required edges : 0
- write geo in result3/ThU.34.mesh.gmsh
-t: 0.36
-  -- Solve :
-          min -7.44381  max 20.1436
-  --  mesh:  Nb of Triangles =   2082, Nb of Vertices 1321
- kk 2 3 :   -- Solve :
-          min -1.02484e-024  max 1.04966
-          min -0.429005  max 0.382597
-  number of required edges : 0
- write geo in result3/ThH.35.mesh.gmsh
-  number of required edges : 0
- write geo in result3/ThU.35.mesh.gmsh
-t: 0.37
-  -- Solve :
-          min -7.44381  max 20.144
-  --  mesh:  Nb of Triangles =   2082, Nb of Vertices 1321
- kk 2 3 :   -- Solve :
-          min -1.0276e-024  max 1.05609
-          min -0.440999  max 0.393219
-  number of required edges : 0
- write geo in result3/ThH.36.mesh.gmsh
-  number of required edges : 0
- write geo in result3/ThU.36.mesh.gmsh
-t: 0.38
-  -- Solve :
-          min -7.44381  max 20.145
-  --  mesh:  Nb of Triangles =   2082, Nb of Vertices 1321
- kk 2 3 :   -- Solve :
-          min -1.03035e-024  max 1.06252
-          min -0.452998  max 0.403839
-  number of required edges : 0
- write geo in result3/ThH.37.mesh.gmsh
-  number of required edges : 0
- write geo in result3/ThU.37.mesh.gmsh
-t: 0.39
-  -- Solve :
-          min -7.44381  max 20.146
-  --  mesh:  Nb of Triangles =   2082, Nb of Vertices 1321
- kk 2 3 :   -- Solve :
-          min -1.0331e-024  max 1.06895
-          min -0.465001  max 0.41446
-  number of required edges : 0
- write geo in result3/ThH.38.mesh.gmsh
-  number of required edges : 0
- write geo in result3/ThU.38.mesh.gmsh
-t: 0.4
-  -- Solve :
-          min -7.44381  max 20.1471
-  --  mesh:  Nb of Triangles =   2082, Nb of Vertices 1321
- kk 2 3 :   -- Solve :
-          min -1.03585e-024  max 1.07538
-          min -0.47701  max 0.42508
-  number of required edges : 0
- write geo in result3/ThH.39.mesh.gmsh
-  number of required edges : 0
- write geo in result3/ThU.39.mesh.gmsh
-t: 0.41
-  -- Solve :
-          min -7.44381  max 20.1481
-  --  mesh:  Nb of Triangles =   2082, Nb of Vertices 1321
- kk 2 3 :   -- Solve :
-          min -1.0386e-024  max 1.08181
-          min -0.489024  max 0.435699
-  number of required edges : 0
- write geo in result3/ThH.40.mesh.gmsh
-  number of required edges : 0
- write geo in result3/ThU.40.mesh.gmsh
-t: 0.42
-  -- Solve :
-          min -7.44381  max 20.1491
-  --  mesh:  Nb of Triangles =   2082, Nb of Vertices 1321
- kk 2 3 :   -- Solve :
-          min -1.04136e-024  max 1.08825
-          min -0.501042  max 0.446318
-  number of required edges : 0
- write geo in result3/ThH.41.mesh.gmsh
-  number of required edges : 0
- write geo in result3/ThU.41.mesh.gmsh
-t: 0.43
-  -- Solve :
-          min -7.44381  max 20.1501
-  --  mesh:  Nb of Triangles =   2082, Nb of Vertices 1321
- kk 2 3 :   -- Solve :
-          min -1.04411e-024  max 1.09468
-          min -0.513066  max 0.456937
-  number of required edges : 0
- write geo in result3/ThH.42.mesh.gmsh
-  number of required edges : 0
- write geo in result3/ThU.42.mesh.gmsh
-t: 0.44
-  -- Solve :
-          min -7.44381  max 20.151
-  --  mesh:  Nb of Triangles =   2082, Nb of Vertices 1321
- kk 2 3 :   -- Solve :
-          min -1.04686e-024  max 1.10112
-          min -0.525094  max 0.467555
-  number of required edges : 0
- write geo in result3/ThH.43.mesh.gmsh
-  number of required edges : 0
- write geo in result3/ThU.43.mesh.gmsh
-t: 0.45
-  -- Solve :
-          min -7.44381  max 20.152
-  --  mesh:  Nb of Triangles =   2082, Nb of Vertices 1321
- kk 2 3 :   -- Solve :
-          min -1.04962e-024  max 1.10755
-          min -0.537128  max 0.478172
-  number of required edges : 0
- write geo in result3/ThH.44.mesh.gmsh
-  number of required edges : 0
- write geo in result3/ThU.44.mesh.gmsh
-t: 0.46
-  -- Solve :
-          min -7.44381  max 20.153
-  --  mesh:  Nb of Triangles =   2082, Nb of Vertices 1321
- kk 2 3 :   -- Solve :
-          min -1.05237e-024  max 1.11399
-          min -0.549167  max 0.488789
-  number of required edges : 0
- write geo in result3/ThH.45.mesh.gmsh
-  number of required edges : 0
- write geo in result3/ThU.45.mesh.gmsh
-t: 0.47
-  -- Solve :
-          min -7.44381  max 20.1539
-  --  mesh:  Nb of Triangles =   2082, Nb of Vertices 1321
- kk 2 3 :   -- Solve :
-          min -8.48492e-005  max 1.12043
-          min -0.56121  max 0.499406
-  number of required edges : 0
- write geo in result3/ThH.46.mesh.gmsh
-  number of required edges : 0
- write geo in result3/ThU.46.mesh.gmsh
-t: 0.48
-  -- Solve :
-          min -7.44381  max 20.1549
-  --  mesh:  Nb of Triangles =   2082, Nb of Vertices 1321
- kk 2 3 :   -- Solve :
-          min -0.00901895  max 1.12687
-          min -0.57326  max 0.510022
-  number of required edges : 0
- write geo in result3/ThH.47.mesh.gmsh
-  number of required edges : 0
- write geo in result3/ThU.47.mesh.gmsh
-t: 0.49
-  -- Solve :
-          min -7.44381  max 20.1558
-  --  mesh:  Nb of Triangles =   2082, Nb of Vertices 1321
- kk 2 3 :   -- Solve :
-          min -0.0179529  max 1.13331
-          min -0.585314  max 0.520637
-  number of required edges : 0
- write geo in result3/ThH.48.mesh.gmsh
-  number of required edges : 0
- write geo in result3/ThU.48.mesh.gmsh
-t: 0.5
-  -- Solve :
-          min -7.44381  max 20.1567
-  --  mesh:  Nb of Triangles =   2082, Nb of Vertices 1321
- kk 2 3 :   -- Solve :
-          min -0.0268867  max 1.13975
-          min -0.597374  max 0.531252
-  number of required edges : 0
- write geo in result3/ThH.49.mesh.gmsh
-  number of required edges : 0
- write geo in result3/ThU.49.mesh.gmsh
-t: 0.51
-  -- Solve :
-          min -7.44381  max 20.1577
-  --  mesh:  Nb of Triangles =   2082, Nb of Vertices 1321
- kk 2 3 :   -- Solve :
-          min -0.0358203  max 1.14619
-          min -0.609439  max 0.541866
-  number of required edges : 0
- write geo in result3/ThH.50.mesh.gmsh
-  number of required edges : 0
- write geo in result3/ThU.50.mesh.gmsh
-t: 0.52
-  -- Solve :
-          min -7.44381  max 20.1586
-  --  mesh:  Nb of Triangles =   2082, Nb of Vertices 1321
- kk 2 3 :   -- Solve :
-          min -0.0447537  max 1.15263
-          min -0.621509  max 0.55248
-  number of required edges : 0
- write geo in result3/ThH.51.mesh.gmsh
-  number of required edges : 0
- write geo in result3/ThU.51.mesh.gmsh
-t: 0.53
-  -- Solve :
-          min -7.44381  max 20.1595
-  --  mesh:  Nb of Triangles =   2082, Nb of Vertices 1321
- kk 2 3 :   -- Solve :
-          min -0.0536871  max 1.15907
-          min -0.633585  max 0.563093
-  number of required edges : 0
- write geo in result3/ThH.52.mesh.gmsh
-  number of required edges : 0
- write geo in result3/ThU.52.mesh.gmsh
-t: 0.54
-  -- Solve :
-          min -7.44381  max 20.1604
-  --  mesh:  Nb of Triangles =   2082, Nb of Vertices 1321
- kk 2 3 :   -- Solve :
-          min -0.0626203  max 1.16552
-          min -0.645666  max 0.573705
-  number of required edges : 0
- write geo in result3/ThH.53.mesh.gmsh
-  number of required edges : 0
- write geo in result3/ThU.53.mesh.gmsh
-t: 0.55
-  -- Solve :
-          min -7.44381  max 20.1613
-  --  mesh:  Nb of Triangles =   2082, Nb of Vertices 1321
- kk 2 3 :   -- Solve :
-          min -0.0715533  max 1.17197
-          min -0.657753  max 0.584316
-  number of required edges : 0
- write geo in result3/ThH.54.mesh.gmsh
-  number of required edges : 0
- write geo in result3/ThU.54.mesh.gmsh
-t: 0.56
-  -- Solve :
-          min -7.44381  max 20.1621
-  --  mesh:  Nb of Triangles =   2082, Nb of Vertices 1321
- kk 2 3 :   -- Solve :
-          min -0.0804862  max 1.17841
-          min -0.669845  max 0.594927
-  number of required edges : 0
- write geo in result3/ThH.55.mesh.gmsh
-  number of required edges : 0
- write geo in result3/ThU.55.mesh.gmsh
-t: 0.57
-  -- Solve :
-          min -7.44381  max 20.163
-  --  mesh:  Nb of Triangles =   2082, Nb of Vertices 1321
- kk 2 3 :   -- Solve :
-          min -0.0894191  max 1.18486
-          min -0.681942  max 0.605537
-  number of required edges : 0
- write geo in result3/ThH.56.mesh.gmsh
-  number of required edges : 0
- write geo in result3/ThU.56.mesh.gmsh
-t: 0.58
-  -- Solve :
-          min -7.44381  max 20.1639
-  --  mesh:  Nb of Triangles =   2082, Nb of Vertices 1321
- kk 2 3 :   -- Solve :
-          min -0.0983518  max 1.19131
-          min -0.694046  max 0.616147
-  number of required edges : 0
- write geo in result3/ThH.57.mesh.gmsh
-  number of required edges : 0
- write geo in result3/ThU.57.mesh.gmsh
-t: 0.59
-  -- Solve :
-          min -7.44381  max 20.1647
-  --  mesh:  Nb of Triangles =   2082, Nb of Vertices 1321
- kk 2 3 :   -- Solve :
-          min -0.107284  max 1.19776
-          min -0.706155  max 0.626756
-  number of required edges : 0
- write geo in result3/ThH.58.mesh.gmsh
-  number of required edges : 0
- write geo in result3/ThU.58.mesh.gmsh
-t: 0.6
-  -- Solve :
-          min -7.44381  max 20.1656
-^C try getConsole D:\Study\Projects\XNM\code\XNM3.edp
+          min -8.17135  max 25.4135
+ try getConsole D:\Study\Projects\XNM\code\XNM3.edp
