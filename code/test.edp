@@ -4,8 +4,9 @@ Xh u = 0;
 Xh vdof;
 vdof[] = 0 : Xh.ndof-1;
 for (int i = 0; i < Th.nv; i++){
-    // u[][Th(i).x, Th(i).y] = 1;
-    cout << vdof(Th(i).x, Th(i).y) << endl;
+    u[][vdof(Th(i).x, Th(i).y)] = 1;
+    //cout << vdof(Th(i).x, Th(i).y) << endl;
     // cout << u(Th(i).x, Th(i).y) << endl;
     // cout << Th[Th(i).x, Th(i).y] << endl;
 }
+cout << u[] << endl;

@@ -1,3 +1,5 @@
+Microsoft Windows [Version 10.0.17763.557]
+(c) 2018 Microsoft Corporation. All rights reserved.
  
 D:\Study\Projects\XNM\code>test.edp
  
@@ -7,62 +9,25 @@ D:\Study\Projects\XNM\code>-- FreeFem++ v  3.610001 (date jeu. 12 juil. 2018 15:
     2 : fespace Xh(Th, P1);
     3 : Xh u = 0;
     4 : Xh vdof;
-    5 : vdof[]=0:Vh The Identifier Vh does not exist
- 
- Error line number 5, in file D:\Study\Projects\XNM\code\test.edp, before  token Vh
- 
-  current line = 5
-Compile error :
-        line number :5, Vh
-error Compile error :
-        line number :5, Vh
- code = 1 mpirank: 0
- try getConsole D:\Study\Projects\XNM\code\test.edp
- save log in :  'D:\Study\Projects\XNM\code\test.log'
-test.edp
- 
-D:\Study\Projects\XNM\code>-- FreeFem++ v  3.610001 (date jeu. 12 juil. 2018 15:05:23)
- Load: lg_fem lg_mesh lg_mesh3 eigenvalue
-    1 : mesh Th = square(4, 4);
-    2 : fespace Xh(Th, P1);
-    3 : Xh u = 0;
-    4 : Xh vdof;
-    5 : vdof[]=0:Xh.ndof-1;
+    5 : vdof[] = 0 : Xh.ndof-1;
     6 : for (int i = 0; i < Th.nv; i++){
-    7 :     // u[][Th(i).x, Th(i).y] = 1;
-    8 :     cout << vdof(Th(i).x, Th(i).y) << endl;
+    7 :     u[][vdof(Th(i).x, Th(i).y)] = 1;
+    8 :     //cout << vdof(Th(i).x, Th(i).y) << endl;
     9 :     // cout << u(Th(i).x, Th(i).y) << endl;
    10 :     // cout << Th[Th(i).x, Th(i).y] << endl;
-   11 : } sizestack + 1024 =1444  ( 420 )
+   11 : }
+   12 : cout << u[] << endl; sizestack + 1024 =1444  ( 420 )
  
   -- Square mesh : nb vertices  =25 ,  nb triangles = 32 ,  nb boundary edges 16
-0
-1
-2
-3
-4
-5
-6
-7
-8
-9
-10
-11
-12
-13
-14
-15
-16
-17
-18
-19
-20
-21
-22
-23
-24
-times: compile 0.044s, execution 0.036s,  mpirank:0
- ######## We forget of deleting   64 Nb pointer,   0Bytes  ,  mpirank 0, memory leak =0
- CodeAlloc : nb ptr  2763,  size :373768 mpirank: 0
+25
+          1       1       1       1       1
+          1       1       1       1       1
+          1       1       1       1       1
+          1       1       1       1       1
+          1       1       1       1       1
+ 
+times: compile 0.045s, execution 0.007s,  mpirank:0
+ ######## We forget of deleting   16 Nb pointer,   0Bytes  ,  mpirank 0, memory leak =0
+ CodeAlloc : nb ptr  2771,  size :373960 mpirank: 0
 Ok: Normal End
  try getConsole D:\Study\Projects\XNM\code\test.edp
