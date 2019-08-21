@@ -1,4 +1,3 @@
-mesh Th = square(4, 4);
-int[int] r = [1, 5];
-Th = change(Th, label = r);
-savemesh(Th, "Th1.msh");
+mesh Th = square(50, 50);
+Th = splitmesh(Th, 4*((x-0.5)^2+(y-0.5)^2)+1);
+plot(Th);

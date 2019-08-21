@@ -23,7 +23,7 @@ border G#i(t = 0, 1){
 }
 real lg#i = Curves(2, be(2 * i + 1) - 1); //
 GG(0) GG(1) // number of closing curve
-real hh = -20;
+real hh = -2;
 //plot(G0(lg0/hh) + G1(lg1/hh));
 
 func bord = G0(lg0/hh);
@@ -43,4 +43,4 @@ Th = movemesh(Th, [x * scale * 1000 + 580000 - 200, y * scale * 1000 + 2323000 -
 
 //plot(Th, wait = true);
 medit("Th", Th);
-savemesh (Th ,"data/Th1.msh");
+savemesh (Th ,"data/Th4.msh");

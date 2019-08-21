@@ -3,11 +3,11 @@
     1 : load "medit"(load: loadLibary C:\Program Files (x86)\FreeFem++\\.\medit = 0)
     2 :
     3 : string path = "data/";
-    4 : int nthfile = 3;
+    4 : int nthfile = 2;
     5 : string filemesh = "Th" + nthfile;
     6 : mesh Th = readmesh(path + filemesh + ".msh");
     7 :
-    8 : int[int] NoVMesh = [515, 1802, 6718];
+    8 : int[int] NoVMesh = [515, 1802, 6718, 6718];
     9 : real[int, int] hz(NoVMesh[nthfile - 1], 3);
    10 : ifstream filemeshZ(path + filemesh + "CoZ.txt");
    11 : filemeshZ >> hz;
@@ -41,7 +41,7 @@
    39 :     return res;
    40 : }
    41 :
-   42 : real dt = 1e-2, nu = 2.67 * 1e-4, g = 9.81, rho = 1000, n = 0.025, T = 9999999;
+   42 : real dt = 0.1, nu = 2.67 * 1e-4, g = 9.81, rho = 1000, n = 0.025, T = 9999999;
    43 : real tau =  g * n * n;
    44 : real eps = 0.05;
    45 :
@@ -53,274 +53,1779 @@
    51 :
    52 : fespace Xh(Th, P1);
    53 : fespace Hh(Th, P1dc);
-   54 : Xh zh; zh[] = FillZ(zh[]);
-   55 : Hh H, phi, Hold = 9 - zh;
-   56 : Xh ux = 0.5, uy = 0.0;
+   54 : Xh zh; zh[] = -FillZ(zh[]);
+   55 : Hh H, phi, Hold = 9 + zh;
+   56 : Xh ux = 0.0, uy = 0.0;
    57 : Xh vdof;
    58 : vdof[] = 0 : Xh.ndof-1;
    59 :
-   60 : int cnt = 0;
-   61 : string foldername = "result3/";
-   62 :
-   63 : savemesh(Th, foldername + "ThH.mesh");
-   64 : savemesh(Th, foldername + "ThU.mesh");
-   65 :
-   66 : for(real t = dt; t <= T; t += dt){
-   67 :     cout << "t: " << t << endl;
-   68 :     real[int] BoundData = InterpolationData(t);
-   69 :     real etaUB = BoundData(1);
-   70 :     // real etaUB1 = BoundData(2);
-   71 :     // real etaUB2 = BoundData(3);
-   72 :
-   73 :     real al = 0.5;
-   74 :     macro n() (N.x * ux + N.y * uy)  (N.x * ux + N.y * uy) //
-   75 :     solve TransportEquation(H, phi) =
-   76 :         int2d(Th)((H/dt + ux * dx(H) + uy * dy(H) + H * Div(ux, uy)     (dx(ux) + dy( uy)) ) * phi)
-   77 :         + intalledges(Th)((1 - nTonEdge) * phi * (al * abs(n         (N.x * ux + N.y * uy) ) - n         (N.x *
-È™ßt±Ë?ux + N.y * uy) /2) *  jump(H))
-   78 :         - int1d(Th, 2)((n         (N.x * ux + N.y * uy)  < 0) * abs(n         (N.x * ux + N.y * uy) ) * H * phi)È™ßt±Ë? 
-   79 :         - int2d(Th)(Hold * phi / dt)
-   80 :         + int1d(Th, 2)((n         (N.x * ux + N.y * uy)  < 0) * abs(n         (N.x * ux + N.y * uy) ) * (etaUB -È™ßt±Ë? zh) * phi);
+   60 : int cnt = 1;
+   61 : int count = 0;
+   62 : string foldername = "result3/";
+   63 :
+   64 : savemesh(Th, foldername + "ThH.mesh");
+   65 : savemesh(Th, foldername + "ThU.mesh");
+   66 :
+   67 : // plot(zh, fill=1, value=1);
+   68 : //  mesh Thwet = trunc(Th, zh > 0);
+   69 : // cout << Th.hmax << endl;
+   70 : // mesh Thwet = adaptmesh(Th, 1/(abs(zh - 0.05) + Th.hmax));
+   71 : mesh Thwet = trunc(Th, zh >= -10, split = 2);
+   72 : Th = Th + Thwet;
+   73 : Thwet = trunc(Th, zh >= -5, split = 2);
+   74 : Th = Th + Thwet;
+   75 : // Thwet = trunc(Th, zh >= -2, split = 2);
+   76 : // Th = Th + Thwet;
+   77 : medit("Th", Th, zh);
+   78 : // for(int i = 0; i < Thwet.nbe; i++){
+   79 : //         cout << zh[][Thwet.be(i)[0]] << " " << zh[][Thwet.be(i)[1]] << " " << Thwet.be(i).label <<  endl;
+   80 : //     }
    81 :
-   82 :     mesh Thwet = trunc(Th, H >= eps);
-   83 :     // func  newlabel = (H >= eps && label == 0) ? 1 : label;
-   84 :     // Thwet = change(Thwet, flabel = newlabel);
-   85 :     // savemesh(Thwet, foldername + "Thwet.msh");
-   86 :
-   87 :     ofstream wf(foldername + "Thwet.msh");
-   88 :     wf.fixed;
-   89 :     wf << Thwet.nv << " " << Thwet.nt << " " << Thwet.nbe << endl;
-   90 :
-   91 :     for(int i = 0; i < Thwet.nv; i++){
-   92 :         int check = 0;
-   93 :         for (int j = 0; j < Thwet.nbe; j++){
-   94 :             if ((i == Thwet.be(j)[0] || i == Thwet.be(j)[1]) && (Thwet(i).label == 0)){
-   95 :                 check = 1;
-   96 :                 break;
-   97 :             }
-   98 :         }
-   99 :         if (check == 1){
-  100 :             wf << Thwet(i).x << " " << Thwet(i).y << " " << 1 << endl;
-  101 :         } else {
-  102 :             wf << Thwet(i).x << " " << Thwet(i).y << " " << Thwet(i).label << endl;
-  103 :         }
-  104 :     }
-  105 :
-  106 :     for (int i = 0; i < Thwet.nt; i++){
-  107 :         wf << Thwet[i][0] + 1 << " " << Thwet[i][1]  + 1 << " " << Thwet[i][2]  + 1 << " " << Thwet[i].label <<
-È™ßt±Ë?endl;
-  108 :     }
-  109 :
-  110 :     for(int i = 0; i < Thwet.nbe; i++){
-  111 :         if (Thwet.be(i)[0].label == 0 || Thwet.be(i)[1].label == 0)
-  112 :             wf << Thwet.be(i)[0] + 1 << " " << Thwet.be(i)[1] + 1 << " " << 1 <<  endl;
-  113 :         else
-  114 :             wf << Thwet.be(i)[0] + 1 << " " << Thwet.be(i)[1] + 1 << " " << Thwet.be(i).label <<  endl;
-  115 :     }
-  116 :
-  117 :     wf.flush;
+   82 : // medit("Th", Thdry);
+   83 : // int dem = 0;
+   84 : // for (int i = 0; i < Th.nv; i++){
+   85 : //     if (zh[][i] > 0){
+   86 : //         dem ++;
+   87 : //     }
+   88 : // }
+   89 : // cout << dem << endl;
+   90 : // cout << Thwet.nv << endl;
+   91 : // cout << Th.nv << " " << Thwet.nv << endl;
+   92 : // for(int i = 0; i < Thwet.nv; i++){
+   93 : //     cout.fixed << Thwet(i).x << " " << Thwet(i).y << " "<< zh(Thwet(i).x, Thwet(i).y) << endl;
+   94 : // }
+   95 :
+   96 :
+   97 : // for(real t = dt; t <= 0; t += dt){
+   98 : //     cout << "t: " << t << endl;
+   99 : //     real[int] BoundData = InterpolationData(t);
+  100 : //     real etaUB = BoundData(1);
+  101 : //     real etaUB1 = BoundData(2);
+  102 : //     real etaUB2 = BoundData(3);
+  103 :
+  104 : //     real al = 0.5;
+  105 : //     macro n() (N.x * ux + N.y * uy) //
+  106 : //     solve TransportEquation(H, phi) =
+  107 : //         int2d(Th)((H/dt + ux * dx(H) + uy * dy(H) + H * Div(ux, uy)) * phi)
+  108 : //         + intalledges(Th)((1 - nTonEdge) * phi * (al * abs(n) - n/2) *  jump(H))
+  109 : //         - int1d(Th, 2)((n < 0) * abs(n) * H * phi)
+  110 : //         - int2d(Th)(Hold * phi / dt)
+  111 : //         + int1d(Th, 2)((n < 0) * abs(n) * (etaUB - zh) * phi);
+  112 :
+  113 : //     // solve TransportEquation(H, phi) =
+  114 : //     //     int2d(Th)(H * phi / dt) - int2d(Th)(Hold * phi / dt)
+  115 : //     //     //+ int2d(Th)(Grad(H)' * [ux, uy] * phi + H * Div(ux, uy) * phi)
+  116 : //     //     - int2d(Th)(H * [ux, uy]' * Grad(phi))
+  117 : //     //     + on(2, H = etaUB - zh) + on(1, H = 0) + on(3, H = etaUB1 - zh) + on(4, H = etaUB2 - zh);
   118 :
-  119 :     Thwet = readmesh(foldername + "Thwet.msh");
-  120 :     // medit("Thwet", Thwet);
-  121 :
-  122 :     fespace Xhwet(Thwet, P1);
-  123 :     Xhwet uwx, uwy, vx, vy;
-  124 :     Xhwet uxold, uyold;
-  125 :     Xhwet etawet, Hwet;
+  119 :
+  120 : //     mesh Thwet = trunc(Th, H >= 0.05);
+  121 : //     medit("Thwet", Thwet, H);
+  122 :
+  123 : //     for(int i = 0; i < Thwet.nv; i++){
+  124 : //             cout << H(Thwet(i).x, Thwet(i).y) << " ";
+  125 : //     }
   126 :
-  127 :     for(int i = 0; i < Thwet.nv; i++){
-  128 :         uxold[][i] = ux(Thwet(i).x, Thwet(i).y);
-  129 :         uyold[][i] = uy(Thwet(i).x, Thwet(i).y);
-  130 :         Hwet[][i] = H(Thwet(i).x, Thwet(i).y);
-  131 :         etawet[][i] = Hwet[][i] + zh(Thwet(i).x, Thwet(i).y);
-  132 :     }
-  133 :
-  134 :     real uUB = BoundData(0);
-  135 :     solve NavierStokes([uwx, uwy], [vx, vy], solver = Crout) =
-  136 :         int2d(Thwet)((uwx * vx + uwy * vy) / dt)
-  137 :         - int2d(Thwet)(
-  138 :               convect([uxold, uyold], -dt, uxold) * vx / dt
-  139 :             + convect([uxold, uyold], -dt, uyold) * vy / dt
-  140 :         )
-  141 :         + int2d(Thwet)(g * Grad(etawet)    [dx(etawet), dy(etawet)] ' * [vx, vy])
-  142 :         // - int2d(Thwet)(g * eta * Div(vx, vy))
-  143 :         - int2d(Thwet)(nu / Hwet * [vx, vy]' * Grad2(uwx, uwy)      [[dx(uwx), dy(uwx)], [dx( uwy), dy( uwy)]]
-* Grad(Hwet)    [dx(Hwet), dy(Hwet)]  - nu * Grad1(uwx, uwy)      [dx(uwx), dy(uwx), dx( uwy), dy( uwy)] ' * Grad1(vx, vÈ™ßt±Ë?y)      [dx(vx), dy(vx), dx( vy), dy( vy)] )
-  144 :         + int2d(Thwet)((tau * 1/Hwet^(4/3) * (uxold * uxold + uyold * uyold)^(0.5)) * (uwx * vx + uwy * vy))
-  145 :         + on(2, uwx = uUB, uwy = 0) + on(1, uwx = 0, uwy = 0);
+  127 : //     ofstream wf(foldername + "Thwet.msh");
+  128 : //     wf.fixed;
+  129 : //     wf << Thwet.nv << " " << Thwet.nt << " " << Thwet.nbe << endl;
+  130 :
+  131 : //     for(int i = 0; i < Thwet.nv; i++){
+  132 : //         // int check = 0;
+  133 : //         // for (int j = 0; j < Thwet.nbe; j++){
+  134 : //         //     if ((i == Thwet.be(j)[0] || i == Thwet.be(j)[1]) && (Thwet(i).label == 0)){
+  135 : //         //         check = 1;
+  136 : //         //         break;
+  137 : //         //     }
+  138 : //         // }
+  139 : //         // if (check == 1){
+  140 : //         //     wf << Thwet(i).x << " " << Thwet(i).y << " " << 1 << endl;
+  141 : //         // } else {
+  142 : //         //     wf << Thwet(i).x << " " << Thwet(i).y << " " << Thwet(i).label << endl;
+  143 : //         // }
+  144 : //         wf << Thwet(i).x << " " << Thwet(i).y << " " << Thwet(i).label << endl;
+  145 : //     }
   146 :
-  147 :     for (int i = 0; i < Thwet.nv; i++){
-  148 :         if(Thwet(i).label == 1 && (abs(uwx[][i])>eps || abs(uwy[][i]) > eps)){
-  149 :             cout << uwx[][i] << " EORROR " << uwy[][i] << endl;
-  150 :         }
-  151 :     }
-  152 :     ux = 0; uy = 0; // reset
-  153 :     for(int i = 0; i < Thwet.nv; i++){
-  154 :         ux[][vdof(Thwet(i).x, Thwet(i).y)] = uwx[][i];
-  155 :         uy[][vdof(Thwet(i).x, Thwet(i).y)] = uwy[][i];
-  156 :     }
-  157 :     Hold = H;
-  158 :     // plot(H, fill = 1, value = 1);
-  159 :     plot([uwx, uwy], fill = 1, value = 1);
-  160 :     // medit("Th", Th, [ux, uy]);
-  161 :
-  162 :     savesol(foldername + "ThH." + string(cnt) + ".sol", Th, H);
-  163 :         savemesh(Th, foldername + "ThH." + string(cnt)+".mesh");
-  164 :     savesol(foldername + "ThU." + string(cnt) + ".sol", Th, [ux, uy]);
-  165 :         savemesh(Th, foldername + "ThU." + string(cnt)+".mesh");
-  166 :     cnt += 1;
-  167 : }
-  168 :  sizestack + 1024 =12776  ( 11752 )
+  147 : //     for (int i = 0; i < Thwet.nt; i++){
+  148 : //         wf << Thwet[i][0] + 1 << " " << Thwet[i][1]  + 1 << " " << Thwet[i][2]  + 1 << " " << Thwet[i].label
+Ð$<< endl;
+  149 : //     }
+  150 :
+  151 : //     for(int i = 0; i < Thwet.nbe; i++){
+  152 : //         if (Thwet.be(i)[0].label == 0 || Thwet.be(i)[1].label == 0)
+  153 : //             wf << Thwet.be(i)[0] + 1 << " " << Thwet.be(i)[1] + 1 << " " << 1 <<  endl;
+  154 : //         else
+  155 : //             wf << Thwet.be(i)[0] + 1 << " " << Thwet.be(i)[1] + 1 << " " << Thwet.be(i).label <<  endl;
+  156 : //     }
+  157 :
+  158 : //     wf.flush;
+  159 :
+  160 : //     Thwet = readmesh(foldername + "Thwet.msh");
+  161 : //     // medit("Thwet", Thwet);
+  162 :
+  163 : //     fespace Xhwet(Thwet, P1);
+  164 : //     Xhwet uwx, uwy, vx, vy;
+  165 : //     Xhwet uxold, uyold;
+  166 : //     Xhwet etawet, Hwet;
+  167 :
+  168 : //     for(int i = 0; i < Thwet.nv; i++){
+  169 : //         uxold[][i] = ux(Thwet(i).x, Thwet(i).y);
+  170 : //         uyold[][i] = uy(Thwet(i).x, Thwet(i).y);
+  171 : //         Hwet[][i] = H(Thwet(i).x, Thwet(i).y);
+  172 : //         // cout << Hwet[][i] << " ";
+  173 : //         etawet[][i] = Hwet[][i] - zh(Thwet(i).x, Thwet(i).y);
+  174 : //     }
+  175 :
+  176 : //     real uUB = BoundData(0);
+  177 : //     solve NavierStokes([uwx, uwy], [vx, vy], solver = sparsesolver) =
+  178 : //         int2d(Thwet)((uwx * vx + uwy * vy) / dt)
+  179 : //         + int2d(Thwet)(
+  180 : //             - convect([uxold, uyold], -dt, uxold) * vx / dt
+  181 : //             - convect([uxold, uyold], -dt, uyold) * vy / dt
+  182 : //         )
+  183 : //         + int2d(Thwet)(g * Grad(etawet)' * [vx, vy])
+  184 : //         - int2d(Thwet)(nu / Hwet * [vx, vy]' * Grad2(uwx, uwy) * Grad(Hwet) - nu * Grad1(uwx, uwy)' * Grad1(vÐ$x, vy))
+  185 : //         + int2d(Thwet)((tau/Hwet^(4/3) * (uxold * uxold + uyold * uyold)^(0.5)) * (uwx * vx + uwy * vy))
+  186 : //         + on(2, uwx = uUB, uwy = 0) + on(1, uwx = 0, uwy = 0);
+  187 :
+  188 : //     // for (int i = 0; i < Thwet.nv; i++){
+  189 : //     //     if(Thwet(i).label == 1 && (abs(uwx[][i]) > 0.001*eps || abs(uwy[][i]) > 0.001*eps)){
+  190 : //     //         cout << uwx[][i] << " EORROR " << uwy[][i] << endl;
+  191 : //     //     }
+  192 : //     // }
+  193 : //     ux = 0; uy = 0; // reset
+  194 : //     for(int i = 0; i < Thwet.nv; i++){
+  195 : //         ux[][vdof(Thwet(i).x, Thwet(i).y)] = uwx[][i];
+  196 : //         uy[][vdof(Thwet(i).x, Thwet(i).y)] = uwy[][i];
+  197 : //     }
+  198 : //     Hold = H;
+  199 : //     plot(H, fill = 1, value = 1);
+  200 : //     // plot([uwx, uwy], fill = 1, value = 1);
+  201 : //     // plot([ux, uy], fill = 1, value = 1);
+  202 : //     // medit("Th", Th, [ux, uy]);
+  203 :
+  204 : //     if(count / 100 == cnt){
+  205 : //         savesol(foldername + "ThH." + string(cnt) + ".sol", Th, H);
+  206 : //         savemesh(Th, foldername + "ThH." + string(cnt)+".mesh");
+  207 : //         savesol(foldername + "ThU." + string(cnt) + ".sol", Th, [ux, uy]);
+  208 : //         savemesh(Th, foldername + "ThU." + string(cnt)+".mesh");
+  209 : //         cnt += 1;
+  210 : //     }
+  211 : //     count += 1;
+  212 : // }
+  213 :  sizestack + 1024 =3072  ( 2048 )
  
-  --  mesh:  Nb of Triangles =  12657, Nb of Vertices 6718
+  --  mesh:  Nb of Triangles =   3214, Nb of Vertices 1802
   number of required edges : 0
  write geo in result3/ThH.mesh.gmsh
   number of required edges : 0
  write geo in result3/ThU.mesh.gmsh
-t: 0.01
-  -- Solve :
-          min -8.17135  max 25.4135
-  --  mesh:  Nb of Triangles =   7956, Nb of Vertices 4684
- kk 2 3 :   -- Solve :
-          min -3.73071e-025  max 0.999937
-          min -1.03441e-006  max 1.17519e-006
-  number of required edges : 0
- write geo in result3/ThH.0.mesh.gmsh
-  number of required edges : 0
- write geo in result3/ThU.0.mesh.gmsh
-t: 0.02
-  -- Solve :
-          min -8.17135  max 25.4127
-  --  mesh:  Nb of Triangles =   7956, Nb of Vertices 4684
- kk 2 3 :   -- Solve :
-          min -3.73066e-025  max 0.999871
-          min -3.42534e-006  max 4.47675e-006
-  number of required edges : 0
- write geo in result3/ThH.1.mesh.gmsh
-  number of required edges : 0
- write geo in result3/ThU.1.mesh.gmsh
-t: 0.03
-  -- Solve :
-          min -8.17135  max 25.4119
-  --  mesh:  Nb of Triangles =   7956, Nb of Vertices 4684
- kk 2 3 :   -- Solve :
-          min -3.73058e-025  max 0.999806
-          min -7.17166e-006  max 9.90435e-006
-  number of required edges : 0
- write geo in result3/ThH.2.mesh.gmsh
-  number of required edges : 0
- write geo in result3/ThU.2.mesh.gmsh
-t: 0.04
-  -- Solve :
-          min -8.17135  max 25.4117
-  --  mesh:  Nb of Triangles =   7956, Nb of Vertices 4684
- kk 2 3 :   -- Solve :
-          min -3.73049e-025  max 0.99974
-          min -1.272e-005  max 1.74577e-005
-  number of required edges : 0
- write geo in result3/ThH.3.mesh.gmsh
-  number of required edges : 0
- write geo in result3/ThU.3.mesh.gmsh
-t: 0.05
-  -- Solve :
-          min -8.17135  max 25.413
-  --  mesh:  Nb of Triangles =   7956, Nb of Vertices 4684
- kk 2 3 :   -- Solve :
-          min -3.73041e-025  max 0.999675
-          min -2.03183e-005  max 2.71363e-005
-  number of required edges : 0
- write geo in result3/ThH.4.mesh.gmsh
-  number of required edges : 0
- write geo in result3/ThU.4.mesh.gmsh
-t: 0.06
-  -- Solve :
-          min -8.17135  max 25.4142
-  --  mesh:  Nb of Triangles =   7956, Nb of Vertices 4684
- kk 2 3 :   -- Solve :
-          min -3.73033e-025  max 0.999609
-          min -2.96833e-005  max 3.894e-005
-  number of required edges : 0
- write geo in result3/ThH.5.mesh.gmsh
-  number of required edges : 0
- write geo in result3/ThU.5.mesh.gmsh
-t: 0.07
-  -- Solve :
-          min -8.17135  max 25.4155
-  --  mesh:  Nb of Triangles =   7956, Nb of Vertices 4684
- kk 2 3 :   -- Solve :
-          min -3.73024e-025  max 0.999544
-          min -4.08149e-005  max 5.28684e-005
-  number of required edges : 0
- write geo in result3/ThH.6.mesh.gmsh
-  number of required edges : 0
- write geo in result3/ThU.6.mesh.gmsh
-t: 0.08
-  -- Solve :
-          min -8.17135  max 25.4168
-  --  mesh:  Nb of Triangles =   7956, Nb of Vertices 4684
- kk 2 3 :   -- Solve :
-          min -3.73016e-025  max 0.999478
-          min -5.37127e-005  max 6.89212e-005
-  number of required edges : 0
- write geo in result3/ThH.7.mesh.gmsh
-  number of required edges : 0
- write geo in result3/ThU.7.mesh.gmsh
-t: 0.09
-  -- Solve :
-          min -8.17135  max 25.4181
-  --  mesh:  Nb of Triangles =   7956, Nb of Vertices 4684
- kk 2 3 :   -- Solve :
-          min -3.73007e-025  max 0.999413
-          min -6.83765e-005  max 8.70979e-005
-  number of required edges : 0
- write geo in result3/ThH.8.mesh.gmsh
-  number of required edges : 0
- write geo in result3/ThU.8.mesh.gmsh
-t: 0.1
-  -- Solve :
-          min -8.17135  max 25.4194
-  --  mesh:  Nb of Triangles =   7956, Nb of Vertices 4684
- kk 2 3 :   -- Solve :
-          min -3.72999e-025  max 0.999348
-          min -8.4806e-005  max 0.000107398
-  number of required edges : 0
- write geo in result3/ThH.9.mesh.gmsh
-  number of required edges : 0
- write geo in result3/ThU.9.mesh.gmsh
-t: 0.11
-  -- Solve :
-          min -8.17135  max 25.4206
-  --  mesh:  Nb of Triangles =   7956, Nb of Vertices 4684
- kk 2 3 :   -- Solve :
-          min -3.7299e-025  max 0.999283
-          min -0.000103001  max 0.000129822
-  number of required edges : 0
- write geo in result3/ThH.10.mesh.gmsh
-  number of required edges : 0
- write geo in result3/ThU.10.mesh.gmsh
-t: 0.12
-  -- Solve :
-          min -8.17135  max 25.4219
-  --  mesh:  Nb of Triangles =   7956, Nb of Vertices 4684
- kk 2 3 :   -- Solve :
-          min -3.72982e-025  max 0.999218
-          min -0.000122961  max 0.000154369
-  number of required edges : 0
- write geo in result3/ThH.11.mesh.gmsh
-  number of required edges : 0
- write geo in result3/ThU.11.mesh.gmsh
-t: 0.13
-  -- Solve :
-          min -8.17135  max 25.4232
-  --  mesh:  Nb of Triangles =   7956, Nb of Vertices 4684
- kk 2 3 :   -- Solve :
-          min -3.72973e-025  max 0.999153
-          min -0.000144686  max 0.000181038
-  number of required edges : 0
- write geo in result3/ThH.12.mesh.gmsh
-  number of required edges : 0
- write geo in result3/ThU.12.mesh.gmsh
-t: 0.14
-  -- Solve :
-          min -8.17135  max 25.4245
+   Attention l'arete frontiere 1106 n'est pas dans le maillage 862 5052
+   Attention l'arete frontiere 1108 n'est pas dans le maillage 864 5061
+   Attention l'arete frontiere 1109 n'est pas dans le maillage 5061 865
+   Attention l'arete frontiere 1110 n'est pas dans le maillage 865 5062
+   Attention l'arete frontiere 1111 n'est pas dans le maillage 5062 1004
+   Attention l'arete frontiere 1113 n'est pas dans le maillage 5064 866
+   Attention l'arete frontiere 1114 n'est pas dans le maillage 866 5066
+   Attention l'arete frontiere 1119 n'est pas dans le maillage 5071 862
+   Attention l'arete frontiere 1120 n'est pas dans le maillage 873 5090
+   Attention l'arete frontiere 1123 n'est pas dans le maillage 5093 873
+   Attention l'arete frontiere 1125 n'est pas dans le maillage 5133 883
+   Attention l'arete frontiere 1126 n'est pas dans le maillage 883 5135
+   Attention l'arete frontiere 1129 n'est pas dans le maillage 5141 884
+   Attention l'arete frontiere 1130 n'est pas dans le maillage 884 5144
+   Attention l'arete frontiere 1133 n'est pas dans le maillage 5148 885
+   Attention l'arete frontiere 1134 n'est pas dans le maillage 885 5150
+   Attention l'arete frontiere 1137 n'est pas dans le maillage 5184 895
+   Attention l'arete frontiere 1139 n'est pas dans le maillage 5190 896
+   Attention l'arete frontiere 1140 n'est pas dans le maillage 896 5194
+   Attention l'arete frontiere 1141 n'est pas dans le maillage 5194 864
+   Attention l'arete frontiere 1142 n'est pas dans le maillage 895 5196
+   Attention l'arete frontiere 1143 n'est pas dans le maillage 5196 966
+   Attention l'arete frontiere 1144 n'est pas dans le maillage 899 5203
+   Attention l'arete frontiere 1147 n'est pas dans le maillage 5207 899
+   Attention l'arete frontiere 1148 n'est pas dans le maillage 977 5231
+   Attention l'arete frontiere 1150 n'est pas dans le maillage 875 5265
+   Attention l'arete frontiere 1155 n'est pas dans le maillage 5268 875
+   Attention l'arete frontiere 1156 n'est pas dans le maillage 932 5323
+   Attention l'arete frontiere 1159 n'est pas dans le maillage 5327 932
+   Attention l'arete frontiere 1161 n'est pas dans le maillage 5332 933
+   Attention l'arete frontiere 1162 n'est pas dans le maillage 934 5339
+   Attention l'arete frontiere 1164 n'est pas dans le maillage 933 5350
+   Attention l'arete frontiere 1167 n'est pas dans le maillage 5352 934
+   Attention l'arete frontiere 1168 n'est pas dans le maillage 1027 5381
+   Attention l'arete frontiere 1169 n'est pas dans le maillage 5381 995
+   Attention l'arete frontiere 1171 n'est pas dans le maillage 5385 993
+   Attention l'arete frontiere 1173 n'est pas dans le maillage 5432 956
+   Attention l'arete frontiere 1174 n'est pas dans le maillage 956 5433
+   Attention l'arete frontiere 1175 n'est pas dans le maillage 5433 963
+   Attention l'arete frontiere 1176 n'est pas dans le maillage 963 5459
+   Attention l'arete frontiere 1178 n'est pas dans le maillage 965 5467
+   Attention l'arete frontiere 1180 n'est pas dans le maillage 966 5471
+   Attention l'arete frontiere 1181 n'est pas dans le maillage 5471 965
+   Attention l'arete frontiere 1182 n'est pas dans le maillage 969 5475
+   Attention l'arete frontiere 1185 n'est pas dans le maillage 5480 969
+   Attention l'arete frontiere 1186 n'est pas dans le maillage 970 5482
+   Attention l'arete frontiere 1191 n'est pas dans le maillage 5502 977
+   Attention l'arete frontiere 1192 n'est pas dans le maillage 972 5504
+   Attention l'arete frontiere 1195 n'est pas dans le maillage 5505 970
+   Attention l'arete frontiere 1197 n'est pas dans le maillage 5507 972
+   Attention l'arete frontiere 1198 n'est pas dans le maillage 981 5516
+   Attention l'arete frontiere 1201 n'est pas dans le maillage 5520 981
+   Attention l'arete frontiere 1203 n'est pas dans le maillage 5535 913
+   Attention l'arete frontiere 1206 n'est pas dans le maillage 913 5539
+   Attention l'arete frontiere 1210 n'est pas dans le maillage 993 5554
+   Attention l'arete frontiere 1212 n'est pas dans le maillage 995 5556
+   Attention l'arete frontiere 1213 n'est pas dans le maillage 5556 994
+   Attention l'arete frontiere 1215 n'est pas dans le maillage 5558 1030
+   Attention l'arete frontiere 1216 n'est pas dans le maillage 1030 5561
+   Attention l'arete frontiere 1217 n'est pas dans le maillage 5561 996
+   Attention l'arete frontiere 1219 n'est pas dans le maillage 5574 1003
+   Attention l'arete frontiere 1220 n'est pas dans le maillage 1003 5577
+   Attention l'arete frontiere 1222 n'est pas dans le maillage 1004 5583
+   Attention l'arete frontiere 1224 n'est pas dans le maillage 1029 5589
+   Attention l'arete frontiere 1226 n'est pas dans le maillage 1031 5593
+   Attention l'arete frontiere 1227 n'est pas dans le maillage 5593 1029
+   Attention l'arete frontiere 1228 n'est pas dans le maillage 1017 5631
+   Attention l'arete frontiere 1229 n'est pas dans le maillage 5631 1018
+   Attention l'arete frontiere 1230 n'est pas dans le maillage 1018 5636
+   Attention l'arete frontiere 1231 n'est pas dans le maillage 5636 1020
+   Attention l'arete frontiere 1232 n'est pas dans le maillage 1022 5638
+   Attention l'arete frontiere 1234 n'est pas dans le maillage 1020 5642
+   Attention l'arete frontiere 1235 n'est pas dans le maillage 5642 1022
+   Attention l'arete frontiere 1237 n'est pas dans le maillage 5645 1052
+   Attention l'arete frontiere 1238 n'est pas dans le maillage 1052 5646
+   Attention l'arete frontiere 1239 n'est pas dans le maillage 5646 1032
+   Attention l'arete frontiere 1240 n'est pas dans le maillage 996 5663
+   Attention l'arete frontiere 1241 n'est pas dans le maillage 5663 1027
+   Attention l'arete frontiere 1242 n'est pas dans le maillage 1032 5665
+   Attention l'arete frontiere 1243 n'est pas dans le maillage 5665 1031
+   Attention l'arete frontiere 1245 n'est pas dans le maillage 5682 1037
+   Attention l'arete frontiere 1246 n'est pas dans le maillage 1037 5703
+   Attention l'arete frontiere 1251 n'est pas dans le maillage 5725 1049
+   Attention l'arete frontiere 1252 n'est pas dans le maillage 1049 5726
+   Attention l'arete frontiere 1254 n'est pas dans le maillage 1087 5735
+   Attention l'arete frontiere 1255 n'est pas dans le maillage 5735 1074
+   Attention l'arete frontiere 1256 n'est pas dans le maillage 1051 5736
+   Attention l'arete frontiere 1261 n'est pas dans le maillage 5740 1051
+   Attention l'arete frontiere 1263 n'est pas dans le maillage 5742 1016
+   Attention l'arete frontiere 1264 n'est pas dans le maillage 1016 5745
+   Attention l'arete frontiere 1265 n'est pas dans le maillage 5745 1017
+   Attention l'arete frontiere 1267 n'est pas dans le maillage 5752 1056
+   Attention l'arete frontiere 1268 n'est pas dans le maillage 1056 5756
+   Attention l'arete frontiere 1269 n'est pas dans le maillage 5756 1058
+   Attention l'arete frontiere 1270 n'est pas dans le maillage 1059 5764
+   Attention l'arete frontiere 1272 n'est pas dans le maillage 1058 5767
+   Attention l'arete frontiere 1273 n'est pas dans le maillage 5767 1059
+   Attention l'arete frontiere 1275 n'est pas dans le maillage 5783 1110
+   Attention l'arete frontiere 1276 n'est pas dans le maillage 1110 5784
+   Attention l'arete frontiere 1277 n'est pas dans le maillage 5784 1063
+   Attention l'arete frontiere 1278 n'est pas dans le maillage 1121 5788
+   Attention l'arete frontiere 1280 n'est pas dans le maillage 1064 5791
+   Attention l'arete frontiere 1281 n'est pas dans le maillage 5791 1121
+   Attention l'arete frontiere 1282 n'est pas dans le maillage 1065 5793
+   Attention l'arete frontiere 1287 n'est pas dans le maillage 5795 1065
+   Attention l'arete frontiere 1288 n'est pas dans le maillage 1063 5806
+   Attention l'arete frontiere 1289 n'est pas dans le maillage 5806 1103
+   Attention l'arete frontiere 1290 n'est pas dans le maillage 1015 5820
+   Attention l'arete frontiere 1292 n'est pas dans le maillage 1074 5822
+   Attention l'arete frontiere 1293 n'est pas dans le maillage 5822 1015
+   Attention l'arete frontiere 1296 n'est pas dans le maillage 1077 5831
+   Attention l'arete frontiere 1298 n'est pas dans le maillage 1096 5836
+   Attention l'arete frontiere 1299 n'est pas dans le maillage 5836 1078
+   Attention l'arete frontiere 1300 n'est pas dans le maillage 1078 5837
+   Attention l'arete frontiere 1301 n'est pas dans le maillage 5837 1077
+   Attention l'arete frontiere 1303 n'est pas dans le maillage 5840 1079
+   Attention l'arete frontiere 1304 n'est pas dans le maillage 1079 5842
+   Attention l'arete frontiere 1305 n'est pas dans le maillage 5842 1095
+   Attention l'arete frontiere 1306 n'est pas dans le maillage 1086 5868
+   Attention l'arete frontiere 1311 n'est pas dans le maillage 5870 1086
+   Attention l'arete frontiere 1313 n'est pas dans le maillage 5872 1087
+   Attention l'arete frontiere 1314 n'est pas dans le maillage 1093 5882
+   Attention l'arete frontiere 1315 n'est pas dans le maillage 5882 1129
+   Attention l'arete frontiere 1316 n'est pas dans le maillage 1095 5890
+   Attention l'arete frontiere 1319 n'est pas dans le maillage 5891 1096
+   Attention l'arete frontiere 1320 n'est pas dans le maillage 1286 5907
+   Attention l'arete frontiere 1321 n'est pas dans le maillage 5907 1262
+   Attention l'arete frontiere 1322 n'est pas dans le maillage 1103 5924
+   Attention l'arete frontiere 1323 n'est pas dans le maillage 5924 1064
+   Attention l'arete frontiere 1325 n'est pas dans le maillage 5949 1189
+   Attention l'arete frontiere 1328 n'est pas dans le maillage 1189 5953
+   Attention l'arete frontiere 1330 n'est pas dans le maillage 1114 5954
+   Attention l'arete frontiere 1335 n'est pas dans le maillage 5957 1114
+   Attention l'arete frontiere 1336 n'est pas dans le maillage 1266 5958
+   Attention l'arete frontiere 1338 n'est pas dans le maillage 1123 5978
+   Attention l'arete frontiere 1345 n'est pas dans le maillage 5982 1123
+   Attention l'arete frontiere 1346 n'est pas dans le maillage 1126 5992
+   Attention l'arete frontiere 1347 n'est pas dans le maillage 5992 1093
+   Attention l'arete frontiere 1348 n'est pas dans le maillage 1136 5995
+   Attention l'arete frontiere 1349 n'est pas dans le maillage 5995 1163
+   Attention l'arete frontiere 1351 n'est pas dans le maillage 5997 1128
+   Attention l'arete frontiere 1352 n'est pas dans le maillage 1128 5999
+   Attention l'arete frontiere 1353 n'est pas dans le maillage 5999 1127
+   Attention l'arete frontiere 1354 n'est pas dans le maillage 1130 6002
+   Attention l'arete frontiere 1356 n'est pas dans le maillage 1129 6006
+   Attention l'arete frontiere 1357 n'est pas dans le maillage 6006 1130
+   Attention l'arete frontiere 1360 n'est pas dans le maillage 1127 6018
+   Attention l'arete frontiere 1361 n'est pas dans le maillage 6018 1136
+   Attention l'arete frontiere 1363 n'est pas dans le maillage 6051 1145
+   Attention l'arete frontiere 1364 n'est pas dans le maillage 1145 6053
+   Attention l'arete frontiere 1365 n'est pas dans le maillage 6053 1144
+   Attention l'arete frontiere 1376 n'est pas dans le maillage 1179 6092
+   Attention l'arete frontiere 1377 n'est pas dans le maillage 6092 1154
+   Attention l'arete frontiere 1378 n'est pas dans le maillage 1216 6094
+   Attention l'arete frontiere 1380 n'est pas dans le maillage 1178 6099
+   Attention l'arete frontiere 1381 n'est pas dans le maillage 6099 1156
+   Attention l'arete frontiere 1382 n'est pas dans le maillage 1144 6120
+   Attention l'arete frontiere 1383 n'est pas dans le maillage 6120 1162
+   Attention l'arete frontiere 1384 n'est pas dans le maillage 1162 6121
+   Attention l'arete frontiere 1385 n'est pas dans le maillage 6121 1177
+   Attention l'arete frontiere 1386 n'est pas dans le maillage 1163 6122
+   Attention l'arete frontiere 1389 n'est pas dans le maillage 6129 1210
+   Attention l'arete frontiere 1390 n'est pas dans le maillage 1289 6158
+   Attention l'arete frontiere 1392 n'est pas dans le maillage 1205 6169
+   Attention l'arete frontiere 1393 n'est pas dans le maillage 6169 1176
+   Attention l'arete frontiere 1394 n'est pas dans le maillage 1177 6173
+   Attention l'arete frontiere 1395 n'est pas dans le maillage 6173 1178
+   Attention l'arete frontiere 1396 n'est pas dans le maillage 1156 6179
+   Attention l'arete frontiere 1397 n'est pas dans le maillage 6179 1179
+   Attention l'arete frontiere 1399 n'est pas dans le maillage 6200 1184
+   Attention l'arete frontiere 1400 n'est pas dans le maillage 1184 6202
+   Attention l'arete frontiere 1401 n'est pas dans le maillage 6202 1271
+   Attention l'arete frontiere 1403 n'est pas dans le maillage 6203 1185
+   Attention l'arete frontiere 1408 n'est pas dans le maillage 1185 6207
+   Attention l'arete frontiere 1410 n'est pas dans le maillage 1263 6210
+   Attention l'arete frontiere 1411 n'est pas dans le maillage 6210 1126
+   Attention l'arete frontiere 1413 n'est pas dans le maillage 6219 1190
+   Attention l'arete frontiere 1416 n'est pas dans le maillage 1190 6222
+   Attention l'arete frontiere 1419 n'est pas dans le maillage 6237 1197
+   Attention l'arete frontiere 1420 n'est pas dans le maillage 1241 6268
+   Attention l'arete frontiere 1421 n'est pas dans le maillage 6268 1204
+   Attention l'arete frontiere 1422 n'est pas dans le maillage 1287 6272
+   Attention l'arete frontiere 1425 n'est pas dans le maillage 6273 1205
+   Attention l'arete frontiere 1426 n'est pas dans le maillage 1210 6289
+   Attention l'arete frontiere 1429 n'est pas dans le maillage 6303 1213
+   Attention l'arete frontiere 1430 n'est pas dans le maillage 1154 6308
+   Attention l'arete frontiere 1431 n'est pas dans le maillage 6308 1216
+   Attention l'arete frontiere 1433 n'est pas dans le maillage 6310 3005
+   Attention l'arete frontiere 1437 n'est pas dans le maillage 6318 1219
+   Attention l'arete frontiere 1438 n'est pas dans le maillage 1219 6321
+   Attention l'arete frontiere 1439 n'est pas dans le maillage 6321 1220
+   Attention l'arete frontiere 1449 n'est pas dans le maillage 6328 1249
+   Attention l'arete frontiere 1452 n'est pas dans le maillage 1249 6332
+   Attention l'arete frontiere 1454 n'est pas dans le maillage 1226 6333
+   Attention l'arete frontiere 1456 n'est pas dans le maillage 1228 6341
+   Attention l'arete frontiere 1459 n'est pas dans le maillage 6348 2196
+   Attention l'arete frontiere 1460 n'est pas dans le maillage 1233 6354
+   Attention l'arete frontiere 1461 n'est pas dans le maillage 6354 1231
+   Attention l'arete frontiere 1462 n'est pas dans le maillage 2204 6362
+   Attention l'arete frontiere 1463 n'est pas dans le maillage 6362 1233
+   Attention l'arete frontiere 1464 n'est pas dans le maillage 1231 6364
+   Attention l'arete frontiere 1466 n'est pas dans le maillage 1235 6367
+   Attention l'arete frontiere 1467 n'est pas dans le maillage 6367 1237
+   Attention l'arete frontiere 1468 n'est pas dans le maillage 1236 6368
+   Attention l'arete frontiere 1469 n'est pas dans le maillage 6368 1235
+   Attention l'arete frontiere 1471 n'est pas dans le maillage 6376 1240
+   Attention l'arete frontiere 1472 n'est pas dans le maillage 1240 6379
+   Attention l'arete frontiere 1473 n'est pas dans le maillage 6379 1241
+   Attention l'arete frontiere 1474 n'est pas dans le maillage 1239 6382
+   Attention l'arete frontiere 1476 n'est pas dans le maillage 1197 6384
+   Attention l'arete frontiere 1477 n'est pas dans le maillage 6384 1239
+   Attention l'arete frontiere 1478 n'est pas dans le maillage 2182 6389
+   Attention l'arete frontiere 1479 n'est pas dans le maillage 6389 1243
+   Attention l'arete frontiere 1480 n'est pas dans le maillage 1252 6392
+   Attention l'arete frontiere 1481 n'est pas dans le maillage 6392 1245
+   Attention l'arete frontiere 1482 n'est pas dans le maillage 1245 6397
+   Attention l'arete frontiere 1483 n'est pas dans le maillage 6397 1246
+   Attention l'arete frontiere 1485 n'est pas dans le maillage 6401 1248
+   Attention l'arete frontiere 1486 n'est pas dans le maillage 1248 6405
+   Attention l'arete frontiere 1488 n'est pas dans le maillage 3012 6410
+   Attention l'arete frontiere 1489 n'est pas dans le maillage 6410 2191
+   Attention l'arete frontiere 1490 n'est pas dans le maillage 1246 6411
+   Attention l'arete frontiere 1492 n'est pas dans le maillage 1251 6417
+   Attention l'arete frontiere 1493 n'est pas dans le maillage 6417 1252
+   Attention l'arete frontiere 1494 n'est pas dans le maillage 1255 6420
+   Attention l'arete frontiere 1496 n'est pas dans le maillage 1254 6422
+   Attention l'arete frontiere 1497 n'est pas dans le maillage 6422 1255
+   Attention l'arete frontiere 1498 n'est pas dans le maillage 1259 6425
+   Attention l'arete frontiere 1499 n'est pas dans le maillage 6425 1273
+   Attention l'arete frontiere 1500 n'est pas dans le maillage 1273 6426
+   Attention l'arete frontiere 1501 n'est pas dans le maillage 6426 1256
+   Attention l'arete frontiere 1503 n'est pas dans le maillage 6436 1274
+   Attention l'arete frontiere 1504 n'est pas dans le maillage 1274 6437
+   Attention l'arete frontiere 1505 n'est pas dans le maillage 6437 1259
+   Attention l'arete frontiere 1506 n'est pas dans le maillage 1262 6446
+   Attention l'arete frontiere 1507 n'est pas dans le maillage 6446 1263
+   Attention l'arete frontiere 1509 n'est pas dans le maillage 6447 1119
+   Attention l'arete frontiere 1512 n'est pas dans le maillage 1119 6451
+   Attention l'arete frontiere 1515 n'est pas dans le maillage 6460 1266
+   Attention l'arete frontiere 1517 n'est pas dans le maillage 6471 1269
+   Attention l'arete frontiere 1520 n'est pas dans le maillage 1271 6475
+   Attention l'arete frontiere 1521 n'est pas dans le maillage 6475 1251
+   Attention l'arete frontiere 1523 n'est pas dans le maillage 6498 1281
+   Attention l'arete frontiere 1524 n'est pas dans le maillage 1281 6501
+   Attention l'arete frontiere 1527 n'est pas dans le maillage 6503 1282
+   Attention l'arete frontiere 1528 n'est pas dans le maillage 1297 6505
+   Attention l'arete frontiere 1530 n'est pas dans le maillage 1282 6507
+   Attention l'arete frontiere 1531 n'est pas dans le maillage 6507 1283
+   Attention l'arete frontiere 1532 n'est pas dans le maillage 1213 6508
+   Attention l'arete frontiere 1535 n'est pas dans le maillage 6509 1295
+   Attention l'arete frontiere 1536 n'est pas dans le maillage 1256 6515
+   Attention l'arete frontiere 1539 n'est pas dans le maillage 6516 1286
+   Attention l'arete frontiere 1540 n'est pas dans le maillage 3003 6523
+   Attention l'arete frontiere 1541 n'est pas dans le maillage 6523 1287
+   Attention l'arete frontiere 1542 n'est pas dans le maillage 1292 6525
+   Attention l'arete frontiere 1543 n'est pas dans le maillage 6525 3003
+   Attention l'arete frontiere 1544 n'est pas dans le maillage 1288 6528
+   Attention l'arete frontiere 1545 n'est pas dans le maillage 6528 1289
+   Attention l'arete frontiere 1546 n'est pas dans le maillage 1176 6529
+   Attention l'arete frontiere 1547 n'est pas dans le maillage 6529 1288
+   Attention l'arete frontiere 1548 n'est pas dans le maillage 1250 6530
+   Attention l'arete frontiere 1551 n'est pas dans le maillage 6534 1250
+   Attention l'arete frontiere 1552 n'est pas dans le maillage 1293 6539
+   Attention l'arete frontiere 1553 n'est pas dans le maillage 6539 3004
+   Attention l'arete frontiere 1554 n'est pas dans le maillage 3004 6540
+   Attention l'arete frontiere 1555 n'est pas dans le maillage 6540 1292
+   Attention l'arete frontiere 1557 n'est pas dans le maillage 6541 1254
+   Attention l'arete frontiere 1558 n'est pas dans le maillage 1295 6544
+   Attention l'arete frontiere 1560 n'est pas dans le maillage 1244 6547
+   Attention l'arete frontiere 1561 n'est pas dans le maillage 6547 1297
+   Attention l'arete frontiere 1562 n'est pas dans le maillage 1269 6548
+   Attention l'arete frontiere 1563 n'est pas dans le maillage 6548 1244
+   Attention l'arete frontiere 1564 n'est pas dans le maillage 1299 6556
+   Attention l'arete frontiere 1567 n'est pas dans le maillage 6557 2154
+   Attention l'arete frontiere 1568 n'est pas dans le maillage 2154 6558
+   Attention l'arete frontiere 1569 n'est pas dans le maillage 6558 1236
+   Attention l'arete frontiere 1570 n'est pas dans le maillage 2029 6562
+   Attention l'arete frontiere 1571 n'est pas dans le maillage 6562 1300
+   Attention l'arete frontiere 1573 n'est pas dans le maillage 6563 1301
+   Attention l'arete frontiere 1574 n'est pas dans le maillage 1322 6566
+   Attention l'arete frontiere 1577 n'est pas dans le maillage 6568 1730
+   Attention l'arete frontiere 1578 n'est pas dans le maillage 1306 6583
+   Attention l'arete frontiere 1580 n'est pas dans le maillage 1310 6601
+   Attention l'arete frontiere 1583 n'est pas dans le maillage 6602 1311
+   Attention l'arete frontiere 1584 n'est pas dans le maillage 1320 6632
+   Attention l'arete frontiere 1586 n'est pas dans le maillage 1728 6636
+   Attention l'arete frontiere 1587 n'est pas dans le maillage 6636 1320
+   Attention l'arete frontiere 1588 n'est pas dans le maillage 1301 6642
+   Attention l'arete frontiere 1589 n'est pas dans le maillage 6642 1322
+   Attention l'arete frontiere 1591 n'est pas dans le maillage 6643 1323
+   Attention l'arete frontiere 1592 n'est pas dans le maillage 1323 6654
+   Attention l'arete frontiere 1594 n'est pas dans le maillage 1328 6659
+   Attention l'arete frontiere 1595 n'est pas dans le maillage 6659 1329
+   Attention l'arete frontiere 1596 n'est pas dans le maillage 1347 6661
+   Attention l'arete frontiere 1597 n'est pas dans le maillage 6661 1328
+   Attention l'arete frontiere 1598 n'est pas dans le maillage 1338 6693
+   Attention l'arete frontiere 1599 n'est pas dans le maillage 6693 1339
+   Attention l'arete frontiere 1600 n'est pas dans le maillage 1341 6696
+   Attention l'arete frontiere 1602 n'est pas dans le maillage 1339 6699
+   Attention l'arete frontiere 1603 n'est pas dans le maillage 6699 1341
+   Attention l'arete frontiere 1604 n'est pas dans le maillage 1342 6701
+   Attention l'arete frontiere 1605 n'est pas dans le maillage 6701 1343
+   Attention l'arete frontiere 1606 n'est pas dans le maillage 1352 6703
+   Attention l'arete frontiere 1607 n'est pas dans le maillage 6703 1342
+   Attention l'arete frontiere 1609 n'est pas dans le maillage 6705 1719
+   Attention l'arete frontiere 1610 n'est pas dans le maillage 1719 6706
+   Attention l'arete frontiere 1611 n'est pas dans le maillage 6706 1344
+   Attention l'arete frontiere 1613 n'est pas dans le maillage 6716 1347
+   Attention l'arete frontiere 1614 n'est pas dans le maillage 1329 6734
+   Attention l'arete frontiere 1615 n'est pas dans le maillage 6734 1352
+   Attention l'arete frontiere 1619 n'est pas dans le maillage 6782 1383
+   Attention l'arete frontiere 1620 n'est pas dans le maillage 1686 6786
+   Attention l'arete frontiere 1621 n'est pas dans le maillage 6786 1365
+   Attention l'arete frontiere 1625 n'est pas dans le maillage 6788 1398
+   Attention l'arete frontiere 1626 n'est pas dans le maillage 1678 6793
+   Attention l'arete frontiere 1627 n'est pas dans le maillage 6793 1704
+   Attention l'arete frontiere 1629 n'est pas dans le maillage 6795 1368
+   Attention l'arete frontiere 1630 n'est pas dans le maillage 1397 6804
+   Attention l'arete frontiere 1632 n'est pas dans le maillage 1370 6806
+   Attention l'arete frontiere 1633 n'est pas dans le maillage 6806 1397
+   Attention l'arete frontiere 1634 n'est pas dans le maillage 1378 6811
+   Attention l'arete frontiere 1635 n'est pas dans le maillage 6811 1371
+   Attention l'arete frontiere 1636 n'est pas dans le maillage 1365 6828
+   Attention l'arete frontiere 1638 n'est pas dans le maillage 1379 6833
+   Attention l'arete frontiere 1639 n'est pas dans le maillage 6833 1703
+   Attention l'arete frontiere 1640 n'est pas dans le maillage 1703 6834
+   Attention l'arete frontiere 1641 n'est pas dans le maillage 6834 1378
+   Attention l'arete frontiere 1642 n'est pas dans le maillage 1380 6839
+   Attention l'arete frontiere 1644 n'est pas dans le maillage 1383 6850
+   Attention l'arete frontiere 1645 n'est pas dans le maillage 6850 1384
+   Attention l'arete frontiere 1646 n'est pas dans le maillage 1384 6851
+   Attention l'arete frontiere 1647 n'est pas dans le maillage 6851 1380
+   Attention l'arete frontiere 1648 n'est pas dans le maillage 1368 6857
+   Attention l'arete frontiere 1649 n'est pas dans le maillage 6857 1386
+   Attention l'arete frontiere 1650 n'est pas dans le maillage 1387 6861
+   Attention l'arete frontiere 1651 n'est pas dans le maillage 6861 1720
+   Attention l'arete frontiere 1653 n'est pas dans le maillage 6864 1790
+   Attention l'arete frontiere 1654 n'est pas dans le maillage 1389 6872
+   Attention l'arete frontiere 1656 n'est pas dans le maillage 1676 6879
+   Attention l'arete frontiere 1657 n'est pas dans le maillage 6879 1390
+   Attention l'arete frontiere 1659 n'est pas dans le maillage 6883 1393
+   Attention l'arete frontiere 1660 n'est pas dans le maillage 1393 6885
+   Attention l'arete frontiere 1661 n'est pas dans le maillage 6885 1724
+   Attention l'arete frontiere 1662 n'est pas dans le maillage 1395 6888
+   Attention l'arete frontiere 1664 n'est pas dans le maillage 1396 6890
+   Attention l'arete frontiere 1665 n'est pas dans le maillage 6890 1395
+   Attention l'arete frontiere 1666 n'est pas dans le maillage 1398 6895
+   Attention l'arete frontiere 1668 n'est pas dans le maillage 1404 6911
+   Attention l'arete frontiere 1671 n'est pas dans le maillage 6912 1405
+   Attention l'arete frontiere 1672 n'est pas dans le maillage 1405 6920
+   Attention l'arete frontiere 1673 n'est pas dans le maillage 6920 1406
+   Attention l'arete frontiere 1674 n'est pas dans le maillage 1406 6921
+   Attention l'arete frontiere 1675 n'est pas dans le maillage 6921 1700
+   Attention l'arete frontiere 1676 n'est pas dans le maillage 1407 6926
+   Attention l'arete frontiere 1677 n'est pas dans le maillage 6926 1408
+   Attention l'arete frontiere 1678 n'est pas dans le maillage 1409 6928
+   Attention l'arete frontiere 1679 n'est pas dans le maillage 6928 1370
+   Attention l'arete frontiere 1680 n'est pas dans le maillage 1408 6930
+   Attention l'arete frontiere 1681 n'est pas dans le maillage 6930 1409
+   Attention l'arete frontiere 1683 n'est pas dans le maillage 6937 1404
+   Attention l'arete frontiere 1684 n'est pas dans le maillage 1615 6943
+   Attention l'arete frontiere 1685 n'est pas dans le maillage 6943 1412
+   Attention l'arete frontiere 1686 n'est pas dans le maillage 1414 6947
+   Attention l'arete frontiere 1687 n'est pas dans le maillage 6947 1415
+   Attention l'arete frontiere 1688 n'est pas dans le maillage 1423 6962
+   Attention l'arete frontiere 1690 n'est pas dans le maillage 1692 6965
+   Attention l'arete frontiere 1691 n'est pas dans le maillage 6965 1411
+   Attention l'arete frontiere 1692 n'est pas dans le maillage 1411 6966
+   Attention l'arete frontiere 1693 n'est pas dans le maillage 6966 1422
+   Attention l'arete frontiere 1694 n'est pas dans le maillage 1422 6970
+   Attention l'arete frontiere 1697 n'est pas dans le maillage 6971 1423
+   Attention l'arete frontiere 1699 n'est pas dans le maillage 7010 1698
+   Attention l'arete frontiere 1700 n'est pas dans le maillage 1698 7013
+   Attention l'arete frontiere 1702 n'est pas dans le maillage 1435 7018
+   Attention l'arete frontiere 1704 n'est pas dans le maillage 1638 7021
+   Attention l'arete frontiere 1705 n'est pas dans le maillage 7021 1435
+   Attention l'arete frontiere 1706 n'est pas dans le maillage 1437 7023
+   Attention l'arete frontiere 1709 n'est pas dans le maillage 7024 1438
+   Attention l'arete frontiere 1711 n'est pas dans le maillage 7025 1437
+   Attention l'arete frontiere 1712 n'est pas dans le maillage 1438 7027
+   Attention l'arete frontiere 1713 n'est pas dans le maillage 7027 1436
+   Attention l'arete frontiere 1714 n'est pas dans le maillage 1440 7029
+   Attention l'arete frontiere 1715 n'est pas dans le maillage 7029 1439
+   Attention l'arete frontiere 1716 n'est pas dans le maillage 1436 7035
+   Attention l'arete frontiere 1717 n'est pas dans le maillage 7035 1440
+   Attention l'arete frontiere 1718 n'est pas dans le maillage 1450 7037
+   Attention l'arete frontiere 1719 n'est pas dans le maillage 7037 1441
+   Attention l'arete frontiere 1721 n'est pas dans le maillage 7038 1444
+   Attention l'arete frontiere 1722 n'est pas dans le maillage 1444 7041
+   Attention l'arete frontiere 1724 n'est pas dans le maillage 1441 7048
+   Attention l'arete frontiere 1725 n'est pas dans le maillage 7048 1445
+   Attention l'arete frontiere 1726 n'est pas dans le maillage 1439 7066
+   Attention l'arete frontiere 1727 n'est pas dans le maillage 7066 1450
+   Attention l'arete frontiere 1728 n'est pas dans le maillage 1445 7080
+   Attention l'arete frontiere 1730 n'est pas dans le maillage 1494 7081
+   Attention l'arete frontiere 1731 n'est pas dans le maillage 7081 1499
+   Attention l'arete frontiere 1732 n'est pas dans le maillage 1457 7090
+   Attention l'arete frontiere 1733 n'est pas dans le maillage 7090 1495
+   Attention l'arete frontiere 1734 n'est pas dans le maillage 1456 7091
+   Attention l'arete frontiere 1737 n'est pas dans le maillage 7092 1457
+   Attention l'arete frontiere 1739 n'est pas dans le maillage 7100 1458
+   Attention l'arete frontiere 1740 n'est pas dans le maillage 1459 7102
+   Attention l'arete frontiere 1742 n'est pas dans le maillage 1461 7108
+   Attention l'arete frontiere 1743 n'est pas dans le maillage 7108 1460
+   Attention l'arete frontiere 1744 n'est pas dans le maillage 1534 7112
+   Attention l'arete frontiere 1745 n'est pas dans le maillage 7112 1530
+   Attention l'arete frontiere 1746 n'est pas dans le maillage 1462 7113
+   Attention l'arete frontiere 1747 n'est pas dans le maillage 7113 1534
+   Attention l'arete frontiere 1748 n'est pas dans le maillage 1463 7115
+   Attention l'arete frontiere 1749 n'est pas dans le maillage 7115 1464
+   Attention l'arete frontiere 1750 n'est pas dans le maillage 1531 7120
+   Attention l'arete frontiere 1751 n'est pas dans le maillage 7120 1463
+   Attention l'arete frontiere 1752 n'est pas dans le maillage 1464 7125
+   Attention l'arete frontiere 1753 n'est pas dans le maillage 7125 1479
+   Attention l'arete frontiere 1754 n'est pas dans le maillage 1498 7139
+   Attention l'arete frontiere 1755 n'est pas dans le maillage 7139 1461
+   Attention l'arete frontiere 1756 n'est pas dans le maillage 1479 7174
+   Attention l'arete frontiere 1757 n'est pas dans le maillage 7174 1482
+   Attention l'arete frontiere 1758 n'est pas dans le maillage 1482 7182
+   Attention l'arete frontiere 1763 n'est pas dans le maillage 7185 1459
+   Attention l'arete frontiere 1764 n'est pas dans le maillage 1483 7187
+   Attention l'arete frontiere 1765 n'est pas dans le maillage 7187 1456
+   Attention l'arete frontiere 1766 n'est pas dans le maillage 1458 7189
+   Attention l'arete frontiere 1767 n'est pas dans le maillage 7189 1483
+   Attention l'arete frontiere 1769 n'est pas dans le maillage 7204 1500
+   Attention l'arete frontiere 1770 n'est pas dans le maillage 1500 7205
+   Attention l'arete frontiere 1771 n'est pas dans le maillage 7205 1492
+   Attention l'arete frontiere 1772 n'est pas dans le maillage 1493 7221
+   Attention l'arete frontiere 1774 n'est pas dans le maillage 1492 7223
+   Attention l'arete frontiere 1775 n'est pas dans le maillage 7223 1493
+   Attention l'arete frontiere 1776 n'est pas dans le maillage 1495 7229
+   Attention l'arete frontiere 1777 n'est pas dans le maillage 7229 1494
+   Attention l'arete frontiere 1778 n'est pas dans le maillage 1499 7246
+   Attention l'arete frontiere 1779 n'est pas dans le maillage 7246 1498
+   Attention l'arete frontiere 1780 n'est pas dans le maillage 1460 7266
+   Attention l'arete frontiere 1781 n'est pas dans le maillage 7266 1529
+   Attention l'arete frontiere 1783 n'est pas dans le maillage 7267 1535
+   Attention l'arete frontiere 1784 n'est pas dans le maillage 1535 7270
+   Attention l'arete frontiere 1785 n'est pas dans le maillage 7270 1508
+   Attention l'arete frontiere 1788 n'est pas dans le maillage 1518 7295
+   Attention l'arete frontiere 1789 n'est pas dans le maillage 7295 1517
+   Attention l'arete frontiere 1790 n'est pas dans le maillage 1517 7297
+   Attention l'arete frontiere 1793 n'est pas dans le maillage 7330 1525
+   Attention l'arete frontiere 1794 n'est pas dans le maillage 1525 7332
+   Attention l'arete frontiere 1795 n'est pas dans le maillage 7332 1518
+   Attention l'arete frontiere 1796 n'est pas dans le maillage 1528 7341
+   Attention l'arete frontiere 1798 n'est pas dans le maillage 1529 7345
+   Attention l'arete frontiere 1799 n'est pas dans le maillage 7345 1528
+   Attention l'arete frontiere 1800 n'est pas dans le maillage 1507 7348
+   Attention l'arete frontiere 1801 n'est pas dans le maillage 7348 1531
+   Attention l'arete frontiere 1802 n'est pas dans le maillage 1530 7349
+   Attention l'arete frontiere 1803 n'est pas dans le maillage 7349 1507
+   Attention l'arete frontiere 1804 n'est pas dans le maillage 1508 7351
+   Attention l'arete frontiere 1807 n'est pas dans le maillage 7352 1462
+   Attention l'arete frontiere 1808 n'est pas dans le maillage 1544 7364
+   Attention l'arete frontiere 1810 n'est pas dans le maillage 1537 7368
+   Attention l'arete frontiere 1811 n'est pas dans le maillage 7368 1544
+   Attention l'arete frontiere 1812 n'est pas dans le maillage 1540 7371
+   Attention l'arete frontiere 1813 n'est pas dans le maillage 7371 1510
+   Attention l'arete frontiere 1814 n'est pas dans le maillage 1510 7372
+   Attention l'arete frontiere 1815 n'est pas dans le maillage 7372 1537
+   Attention l'arete frontiere 1817 n'est pas dans le maillage 7380 1540
+   Attention l'arete frontiere 1818 n'est pas dans le maillage 1545 7388
+   Attention l'arete frontiere 1820 n'est pas dans le maillage 1556 7394
+   Attention l'arete frontiere 1821 n'est pas dans le maillage 7394 1569
+   Attention l'arete frontiere 1822 n'est pas dans le maillage 1569 7395
+   Attention l'arete frontiere 1823 n'est pas dans le maillage 7395 1545
+   Attention l'arete frontiere 1824 n'est pas dans le maillage 1547 7400
+   Attention l'arete frontiere 1826 n'est pas dans le maillage 1548 7405
+   Attention l'arete frontiere 1827 n'est pas dans le maillage 7405 1561
+   Attention l'arete frontiere 1828 n'est pas dans le maillage 1561 7406
+   Attention l'arete frontiere 1829 n'est pas dans le maillage 7406 1547
+   Attention l'arete frontiere 1831 n'est pas dans le maillage 7408 1549
+   Attention l'arete frontiere 1832 n'est pas dans le maillage 1549 7411
+   Attention l'arete frontiere 1833 n'est pas dans le maillage 7411 1554
+   Attention l'arete frontiere 1834 n'est pas dans le maillage 1551 7415
+   Attention l'arete frontiere 1837 n'est pas dans le maillage 7419 1551
+   Attention l'arete frontiere 1838 n'est pas dans le maillage 1554 7428
+   Attention l'arete frontiere 1841 n'est pas dans le maillage 7429 1548
+   Attention l'arete frontiere 1843 n'est pas dans le maillage 7436 1555
+   Attention l'arete frontiere 1844 n'est pas dans le maillage 1555 7437
+   Attention l'arete frontiere 1845 n'est pas dans le maillage 7437 1566
+   Attention l'arete frontiere 1847 n'est pas dans le maillage 7440 1571
+   Attention l'arete frontiere 1848 n'est pas dans le maillage 1571 7443
+   Attention l'arete frontiere 1849 n'est pas dans le maillage 7443 1556
+   Attention l'arete frontiere 1850 n'est pas dans le maillage 1566 7468
+   Attention l'arete frontiere 1853 n'est pas dans le maillage 7469 1586
+   Attention l'arete frontiere 1854 n'est pas dans le maillage 1568 7475
+   Attention l'arete frontiere 1856 n'est pas dans le maillage 1572 7489
+   Attention l'arete frontiere 1863 n'est pas dans le maillage 7492 1572
+   Attention l'arete frontiere 1865 n'est pas dans le maillage 7495 1574
+   Attention l'arete frontiere 1866 n'est pas dans le maillage 1590 7500
+   Attention l'arete frontiere 1867 n'est pas dans le maillage 7500 1576
+   Attention l'arete frontiere 1868 n'est pas dans le maillage 1578 7503
+   Attention l'arete frontiere 1869 n'est pas dans le maillage 7503 1577
+   Attention l'arete frontiere 1870 n'est pas dans le maillage 1577 7504
+   Attention l'arete frontiere 1871 n'est pas dans le maillage 7504 1622
+   Attention l'arete frontiere 1873 n'est pas dans le maillage 7518 1578
+   Attention l'arete frontiere 1874 n'est pas dans le maillage 1583 7520
+   Attention l'arete frontiere 1876 n'est pas dans le maillage 1584 7524
+   Attention l'arete frontiere 1878 n'est pas dans le maillage 1576 7529
+   Attention l'arete frontiere 1879 n'est pas dans le maillage 7529 1584
+   Attention l'arete frontiere 1880 n'est pas dans le maillage 1586 7531
+   Attention l'arete frontiere 1881 n'est pas dans le maillage 7531 1587
+   Attention l'arete frontiere 1882 n'est pas dans le maillage 1587 7532
+   Attention l'arete frontiere 1883 n'est pas dans le maillage 7532 1583
+   Attention l'arete frontiere 1884 n'est pas dans le maillage 1651 7540
+   Attention l'arete frontiere 1885 n'est pas dans le maillage 7540 1623
+   Attention l'arete frontiere 1886 n'est pas dans le maillage 1617 7545
+   Attention l'arete frontiere 1887 n'est pas dans le maillage 7545 1590
+   Attention l'arete frontiere 1888 n'est pas dans le maillage 1593 7562
+   Attention l'arete frontiere 1889 n'est pas dans le maillage 7562 1594
+   Attention l'arete frontiere 1890 n'est pas dans le maillage 1415 7565
+   Attention l'arete frontiere 1891 n'est pas dans le maillage 7565 1593
+   Attention l'arete frontiere 1892 n'est pas dans le maillage 1596 7572
+   Attention l'arete frontiere 1895 n'est pas dans le maillage 7573 1597
+   Attention l'arete frontiere 1896 n'est pas dans le maillage 1598 7581
+   Attention l'arete frontiere 1897 n'est pas dans le maillage 7581 1599
+   Attention l'arete frontiere 1898 n'est pas dans le maillage 1597 7582
+   Attention l'arete frontiere 1899 n'est pas dans le maillage 7582 1598
+   Attention l'arete frontiere 1900 n'est pas dans le maillage 1599 7583
+   Attention l'arete frontiere 1905 n'est pas dans le maillage 7593 1694
+   Attention l'arete frontiere 1906 n'est pas dans le maillage 1694 7594
+   Attention l'arete frontiere 1909 n'est pas dans le maillage 7601 1604
+   Attention l'arete frontiere 1910 n'est pas dans le maillage 1604 7603
+   Attention l'arete frontiere 1912 n'est pas dans le maillage 1630 7627
+   Attention l'arete frontiere 1915 n'est pas dans le maillage 7628 1693
+   Attention l'arete frontiere 1917 n'est pas dans le maillage 7638 1614
+   Attention l'arete frontiere 1918 n'est pas dans le maillage 1620 7640
+   Attention l'arete frontiere 1919 n'est pas dans le maillage 7640 1615
+   Attention l'arete frontiere 1920 n'est pas dans le maillage 1412 7643
+   Attention l'arete frontiere 1921 n'est pas dans le maillage 7643 1616
+   Attention l'arete frontiere 1922 n'est pas dans le maillage 1616 7644
+   Attention l'arete frontiere 1923 n'est pas dans le maillage 7644 1617
+   Attention l'arete frontiere 1924 n'est pas dans le maillage 1614 7661
+   Attention l'arete frontiere 1925 n'est pas dans le maillage 7661 1620
+   Attention l'arete frontiere 1926 n'est pas dans le maillage 1622 7670
+   Attention l'arete frontiere 1927 n'est pas dans le maillage 7670 1416
+   Attention l'arete frontiere 1928 n'est pas dans le maillage 1416 7671
+   Attention l'arete frontiere 1929 n'est pas dans le maillage 7671 1568
+   Attention l'arete frontiere 1930 n'est pas dans le maillage 1623 7676
+   Attention l'arete frontiere 1931 n'est pas dans le maillage 7676 1624
+   Attention l'arete frontiere 1933 n'est pas dans le maillage 7689 1656
+   Attention l'arete frontiere 1935 n'est pas dans le maillage 7695 1660
+   Attention l'arete frontiere 1936 n'est pas dans le maillage 1660 7698
+   Attention l'arete frontiere 1937 n'est pas dans le maillage 7698 1630
+   Attention l'arete frontiere 1938 n'est pas dans le maillage 1594 7708
+   Attention l'arete frontiere 1939 n'est pas dans le maillage 7708 1634
+   Attention l'arete frontiere 1940 n'est pas dans le maillage 1634 7709
+   Attention l'arete frontiere 1941 n'est pas dans le maillage 7709 1596
+   Attention l'arete frontiere 1942 n'est pas dans le maillage 1574 7710
+   Attention l'arete frontiere 1943 n'est pas dans le maillage 7710 1414
+   Attention l'arete frontiere 1945 n'est pas dans le maillage 7718 1636
+   Attention l'arete frontiere 1947 n'est pas dans le maillage 7724 1638
+   Attention l'arete frontiere 1948 n'est pas dans le maillage 1639 7734
+   Attention l'arete frontiere 1950 n'est pas dans le maillage 1636 7744
+   Attention l'arete frontiere 1952 n'est pas dans le maillage 1665 7746
+   Attention l'arete frontiere 1955 n'est pas dans le maillage 7750 1665
+   Attention l'arete frontiere 1957 n'est pas dans le maillage 7758 1639
+   Attention l'arete frontiere 1959 n'est pas dans le maillage 7767 1650
+   Attention l'arete frontiere 1960 n'est pas dans le maillage 1650 7769
+   Attention l'arete frontiere 1961 n'est pas dans le maillage 7769 1651
+   Attention l'arete frontiere 1962 n'est pas dans le maillage 1645 7771
+   Attention l'arete frontiere 1965 n'est pas dans le maillage 7775 1645
+   Attention l'arete frontiere 1966 n'est pas dans le maillage 1680 7781
+   Attention l'arete frontiere 1967 n'est pas dans le maillage 7781 1655
+   Attention l'arete frontiere 1968 n'est pas dans le maillage 1656 7783
+   Attention l'arete frontiere 1970 n'est pas dans le maillage 1654 7797
+   Attention l'arete frontiere 1973 n'est pas dans le maillage 7801 1654
+   Attention l'arete frontiere 1974 n'est pas dans le maillage 1624 7804
+   Attention l'arete frontiere 1975 n'est pas dans le maillage 7804 1681
+   Attention l'arete frontiere 1976 n'est pas dans le maillage 1655 7818
+   Attention l'arete frontiere 1978 n'est pas dans le maillage 1371 7820
+   Attention l'arete frontiere 1979 n'est pas dans le maillage 7820 1670
+   Attention l'arete frontiere 1981 n'est pas dans le maillage 7823 1407
+   Attention l'arete frontiere 1982 n'est pas dans le maillage 1710 7831
+   Attention l'arete frontiere 1985 n'est pas dans le maillage 7832 1675
+   Attention l'arete frontiere 1986 n'est pas dans le maillage 1675 7838
+   Attention l'arete frontiere 1987 n'est pas dans le maillage 7838 1676
+   Attention l'arete frontiere 1988 n'est pas dans le maillage 1679 7840
+   Attention l'arete frontiere 1991 n'est pas dans le maillage 7841 1678
+   Attention l'arete frontiere 1992 n'est pas dans le maillage 1390 7847
+   Attention l'arete frontiere 1993 n'est pas dans le maillage 7847 1679
+   Attention l'arete frontiere 1994 n'est pas dans le maillage 1681 7852
+   Attention l'arete frontiere 1995 n'est pas dans le maillage 7852 1680
+   Attention l'arete frontiere 1996 n'est pas dans le maillage 1701 7853
+   Attention l'arete frontiere 1999 n'est pas dans le maillage 7863 1379
+   Attention l'arete frontiere 2001 n'est pas dans le maillage 7875 1686
+   Attention l'arete frontiere 2002 n'est pas dans le maillage 1386 7876
+   Attention l'arete frontiere 2004 n'est pas dans le maillage 1693 7899
+   Attention l'arete frontiere 2005 n'est pas dans le maillage 7899 1425
+   Attention l'arete frontiere 2006 n'est pas dans le maillage 1425 7900
+   Attention l'arete frontiere 2007 n'est pas dans le maillage 7900 1692
+   Attention l'arete frontiere 2008 n'est pas dans le maillage 1659 7903
+   Attention l'arete frontiere 2010 n'est pas dans le maillage 1696 7906
+   Attention l'arete frontiere 2011 n'est pas dans le maillage 7906 1659
+   Attention l'arete frontiere 2013 n'est pas dans le maillage 7908 1696
+   Attention l'arete frontiere 2014 n'est pas dans le maillage 1649 7910
+   Attention l'arete frontiere 2017 n'est pas dans le maillage 7914 1649
+   Attention l'arete frontiere 2018 n'est pas dans le maillage 1700 7917
+   Attention l'arete frontiere 2021 n'est pas dans le maillage 7918 1701
+   Attention l'arete frontiere 2022 n'est pas dans le maillage 1670 7925
+   Attention l'arete frontiere 2024 n'est pas dans le maillage 1704 7932
+   Attention l'arete frontiere 2027 n'est pas dans le maillage 7933 1707
+   Attention l'arete frontiere 2028 n'est pas dans le maillage 1715 7946
+   Attention l'arete frontiere 2029 n'est pas dans le maillage 7946 1392
+   Attention l'arete frontiere 2030 n'est pas dans le maillage 1392 7947
+   Attention l'arete frontiere 2031 n'est pas dans le maillage 7947 1710
+   Attention l'arete frontiere 2032 n'est pas dans le maillage 1707 7962
+   Attention l'arete frontiere 2033 n'est pas dans le maillage 7962 1396
+   Attention l'arete frontiere 2034 n'est pas dans le maillage 1343 7969
+   Attention l'arete frontiere 2036 n'est pas dans le maillage 1344 7979
+   Attention l'arete frontiere 2039 n'est pas dans le maillage 7980 1715
+   Attention l'arete frontiere 2040 n'est pas dans le maillage 1720 7990
+   Attention l'arete frontiere 2041 n'est pas dans le maillage 7990 1784
+   Attention l'arete frontiere 2043 n'est pas dans le maillage 7995 1794
+   Attention l'arete frontiere 2044 n'est pas dans le maillage 1724 8010
+   Attention l'arete frontiere 2045 n'est pas dans le maillage 8010 1725
+   Attention l'arete frontiere 2046 n'est pas dans le maillage 1725 8011
+   Attention l'arete frontiere 2047 n'est pas dans le maillage 8011 1389
+   Attention l'arete frontiere 2049 n'est pas dans le maillage 8014 1729
+   Attention l'arete frontiere 2050 n'est pas dans le maillage 1729 8021
+   Attention l'arete frontiere 2051 n'est pas dans le maillage 8021 1727
+   Attention l'arete frontiere 2052 n'est pas dans le maillage 1727 8022
+   Attention l'arete frontiere 2053 n'est pas dans le maillage 8022 1728
+   Attention l'arete frontiere 2054 n'est pas dans le maillage 1730 8024
+   Attention l'arete frontiere 2057 n'est pas dans le maillage 8056 1751
+   Attention l'arete frontiere 2058 n'est pas dans le maillage 1741 8062
+   Attention l'arete frontiere 2060 n'est pas dans le maillage 1810 8065
+   Attention l'arete frontiere 2061 n'est pas dans le maillage 8065 1741
+   Attention l'arete frontiere 2065 n'est pas dans le maillage 8074 1802
+   Attention l'arete frontiere 2066 n'est pas dans le maillage 1757 8090
+   Attention l'arete frontiere 2067 n'est pas dans le maillage 8090 1338
+   Attention l'arete frontiere 2068 n'est pas dans le maillage 1751 8099
+   Attention l'arete frontiere 2071 n'est pas dans le maillage 8101 1759
+   Attention l'arete frontiere 2072 n'est pas dans le maillage 1754 8102
+   Attention l'arete frontiere 2074 n'est pas dans le maillage 1755 8109
+   Attention l'arete frontiere 2075 n'est pas dans le maillage 8109 1827
+   Attention l'arete frontiere 2076 n'est pas dans le maillage 1827 8110
+   Attention l'arete frontiere 2077 n'est pas dans le maillage 8110 1754
+   Attention l'arete frontiere 2079 n'est pas dans le maillage 8112 1820
+   Attention l'arete frontiere 2080 n'est pas dans le maillage 1820 8115
+   Attention l'arete frontiere 2081 n'est pas dans le maillage 8115 1755
+   Attention l'arete frontiere 2083 n'est pas dans le maillage 8117 1757
+   Attention l'arete frontiere 2084 n'est pas dans le maillage 1752 8118
+   Attention l'arete frontiere 2086 n'est pas dans le maillage 1759 8123
+   Attention l'arete frontiere 2087 n'est pas dans le maillage 8123 1752
+   Attention l'arete frontiere 2088 n'est pas dans le maillage 1761 8127
+   Attention l'arete frontiere 2091 n'est pas dans le maillage 8131 1766
+   Attention l'arete frontiere 2092 n'est pas dans le maillage 1766 8138
+   Attention l'arete frontiere 2093 n'est pas dans le maillage 8138 1771
+   Attention l'arete frontiere 2094 n'est pas dans le maillage 1771 8139
+   Attention l'arete frontiere 2095 n'est pas dans le maillage 8139 1765
+   Attention l'arete frontiere 2096 n'est pas dans le maillage 1770 8149
+   Attention l'arete frontiere 2097 n'est pas dans le maillage 8149 1818
+   Attention l'arete frontiere 2098 n'est pas dans le maillage 1818 8150
+   Attention l'arete frontiere 2099 n'est pas dans le maillage 8150 1769
+   Attention l'arete frontiere 2101 n'est pas dans le maillage 8151 1773
+   Attention l'arete frontiere 2102 n'est pas dans le maillage 1773 8154
+   Attention l'arete frontiere 2105 n'est pas dans le maillage 8159 1774
+   Attention l'arete frontiere 2106 n'est pas dans le maillage 1774 8161
+   Attention l'arete frontiere 2109 n'est pas dans le maillage 8171 1780
+   Attention l'arete frontiere 2110 n'est pas dans le maillage 1780 8174
+   Attention l'arete frontiere 2113 n'est pas dans le maillage 8178 1781
+   Attention l'arete frontiere 2114 n'est pas dans le maillage 1782 8185
+   Attention l'arete frontiere 2115 n'est pas dans le maillage 8185 1306
+   Attention l'arete frontiere 2116 n'est pas dans le maillage 1311 8187
+   Attention l'arete frontiere 2117 n'est pas dans le maillage 8187 1782
+   Attention l'arete frontiere 2118 n'est pas dans le maillage 1784 8195
+   Attention l'arete frontiere 2120 n'est pas dans le maillage 1781 8215
+   Attention l'arete frontiere 2121 n'est pas dans le maillage 8215 1788
+   Attention l'arete frontiere 2122 n'est pas dans le maillage 1788 8216
+   Attention l'arete frontiere 2123 n'est pas dans le maillage 8216 1789
+   Attention l'arete frontiere 2124 n'est pas dans le maillage 1790 8218
+   Attention l'arete frontiere 2125 n'est pas dans le maillage 8218 1387
+   Attention l'arete frontiere 2126 n'est pas dans le maillage 1792 8220
+   Attention l'arete frontiere 2127 n'est pas dans le maillage 8220 1791
+   Attention l'arete frontiere 2128 n'est pas dans le maillage 1791 8221
+   Attention l'arete frontiere 2129 n'est pas dans le maillage 8221 1310
+   Attention l'arete frontiere 2130 n'est pas dans le maillage 1793 8227
+   Attention l'arete frontiere 2131 n'est pas dans le maillage 8227 1792
+   Attention l'arete frontiere 2132 n'est pas dans le maillage 1794 8228
+   Attention l'arete frontiere 2133 n'est pas dans le maillage 8228 1793
+   Attention l'arete frontiere 2134 n'est pas dans le maillage 1797 8236
+   Attention l'arete frontiere 2136 n'est pas dans le maillage 1789 8241
+   Attention l'arete frontiere 2137 n'est pas dans le maillage 8241 1797
+   Attention l'arete frontiere 2138 n'est pas dans le maillage 1800 8244
+   Attention l'arete frontiere 2139 n'est pas dans le maillage 8244 1798
+   Attention l'arete frontiere 2140 n'est pas dans le maillage 1798 8245
+   Attention l'arete frontiere 2141 n'est pas dans le maillage 8245 1829
+   Attention l'arete frontiere 2143 n'est pas dans le maillage 8249 1800
+   Attention l'arete frontiere 2144 n'est pas dans le maillage 1809 8253
+   Attention l'arete frontiere 2146 n'est pas dans le maillage 1802 8257
+   Attention l'arete frontiere 2149 n'est pas dans le maillage 8273 1806
+   Attention l'arete frontiere 2150 n'est pas dans le maillage 1769 8278
+   Attention l'arete frontiere 2153 n'est pas dans le maillage 8282 1808
+   Attention l'arete frontiere 2154 n'est pas dans le maillage 1808 8285
+   Attention l'arete frontiere 2157 n'est pas dans le maillage 8291 1809
+   Attention l'arete frontiere 2158 n'est pas dans le maillage 1806 8298
+   Attention l'arete frontiere 2161 n'est pas dans le maillage 8299 1810
+   Attention l'arete frontiere 2162 n'est pas dans le maillage 1816 8309
+   Attention l'arete frontiere 2163 n'est pas dans le maillage 8309 1814
+   Attention l'arete frontiere 2164 n'est pas dans le maillage 1814 8310
+   Attention l'arete frontiere 2165 n'est pas dans le maillage 8310 1813
+   Attention l'arete frontiere 2167 n'est pas dans le maillage 8312 1815
+   Attention l'arete frontiere 2168 n'est pas dans le maillage 1815 8315
+   Attention l'arete frontiere 2169 n'est pas dans le maillage 8315 1761
+   Attention l'arete frontiere 2171 n'est pas dans le maillage 8317 1816
+   Attention l'arete frontiere 2172 n'est pas dans le maillage 1844 8324
+   Attention l'arete frontiere 2173 n'est pas dans le maillage 8324 1817
+   Attention l'arete frontiere 2174 n'est pas dans le maillage 1817 8325
+   Attention l'arete frontiere 2175 n'est pas dans le maillage 8325 1830
+   Attention l'arete frontiere 2176 n'est pas dans le maillage 1828 8358
+   Attention l'arete frontiere 2178 n'est pas dans le maillage 1829 8362
+   Attention l'arete frontiere 2179 n'est pas dans le maillage 8362 1828
+   Attention l'arete frontiere 2180 n'est pas dans le maillage 1830 8363
+   Attention l'arete frontiere 2183 n'est pas dans le maillage 8364 1831
+   Attention l'arete frontiere 2185 n'est pas dans le maillage 8371 1832
+   Attention l'arete frontiere 2186 n'est pas dans le maillage 1765 8375
+   Attention l'arete frontiere 2189 n'est pas dans le maillage 8376 1770
+   Attention l'arete frontiere 2190 n'est pas dans le maillage 1832 8382
+   Attention l'arete frontiere 2191 n'est pas dans le maillage 8382 1834
+   Attention l'arete frontiere 2192 n'est pas dans le maillage 1846 8391
+   Attention l'arete frontiere 2194 n'est pas dans le maillage 1850 8393
+   Attention l'arete frontiere 2196 n'est pas dans le maillage 1853 8397
+   Attention l'arete frontiere 2197 n'est pas dans le maillage 8397 1850
+   Attention l'arete frontiere 2198 n'est pas dans le maillage 1851 8411
+   Attention l'arete frontiere 2199 n'est pas dans le maillage 8411 1845
+   Attention l'arete frontiere 2200 n'est pas dans le maillage 1845 8412
+   Attention l'arete frontiere 2201 n'est pas dans le maillage 8412 1844
+   Attention l'arete frontiere 2202 n'est pas dans le maillage 1834 8415
+   Attention l'arete frontiere 2203 n'est pas dans le maillage 8415 1856
+   Attention l'arete frontiere 2204 n'est pas dans le maillage 1831 8420
+   Attention l'arete frontiere 2205 n'est pas dans le maillage 8420 1846
+   Attention l'arete frontiere 2206 n'est pas dans le maillage 1878 8422
+   Attention l'arete frontiere 2207 n'est pas dans le maillage 8422 1862
+   Attention l'arete frontiere 2209 n'est pas dans le maillage 8424 1839
+   Attention l'arete frontiere 2210 n'est pas dans le maillage 1839 8426
+   Attention l'arete frontiere 2211 n'est pas dans le maillage 8426 1847
+   Attention l'arete frontiere 2213 n'est pas dans le maillage 8436 1851
+   Attention l'arete frontiere 2214 n'est pas dans le maillage 1813 8437
+   Attention l'arete frontiere 2216 n'est pas dans le maillage 1854 8443
+   Attention l'arete frontiere 2217 n'est pas dans le maillage 8443 1840
+   Attention l'arete frontiere 2218 n'est pas dans le maillage 1840 8444
+   Attention l'arete frontiere 2219 n'est pas dans le maillage 8444 1853
+   Attention l'arete frontiere 2220 n'est pas dans le maillage 1847 8448
+   Attention l'arete frontiere 2223 n'est pas dans le maillage 8449 1854
+   Attention l'arete frontiere 2224 n'est pas dans le maillage 1856 8456
+   Attention l'arete frontiere 2225 n'est pas dans le maillage 8456 1857
+   Attention l'arete frontiere 2226 n'est pas dans le maillage 1857 8458
+   Attention l'arete frontiere 2227 n'est pas dans le maillage 8458 1879
+   Attention l'arete frontiere 2229 n'est pas dans le maillage 8459 1864
+   Attention l'arete frontiere 2230 n'est pas dans le maillage 1877 8468
+   Attention l'arete frontiere 2232 n'est pas dans le maillage 1862 8475
+   Attention l'arete frontiere 2233 n'est pas dans le maillage 8475 1863
+   Attention l'arete frontiere 2236 n'est pas dans le maillage 1864 8479
+   Attention l'arete frontiere 2238 n'est pas dans le maillage 1872 8481
+   Attention l'arete frontiere 2240 n'est pas dans le maillage 1866 8485
+   Attention l'arete frontiere 2241 n'est pas dans le maillage 8485 1872
+   Attention l'arete frontiere 2242 n'est pas dans le maillage 1869 8489
+   Attention l'arete frontiere 2243 n'est pas dans le maillage 8489 1868
+   Attention l'arete frontiere 2244 n'est pas dans le maillage 1885 8494
+   Attention l'arete frontiere 2247 n'est pas dans le maillage 8495 1873
+   Attention l'arete frontiere 2248 n'est pas dans le maillage 1874 8499
+   Attention l'arete frontiere 2251 n'est pas dans le maillage 8500 1866
+   Attention l'arete frontiere 2252 n'est pas dans le maillage 1868 8506
+   Attention l'arete frontiere 2253 n'est pas dans le maillage 8506 1882
+   Attention l'arete frontiere 2254 n'est pas dans le maillage 1867 8509
+   Attention l'arete frontiere 2255 n'est pas dans le maillage 8509 1874
+   Attention l'arete frontiere 2256 n'est pas dans le maillage 1873 8510
+   Attention l'arete frontiere 2257 n'est pas dans le maillage 8510 1867
+   Attention l'arete frontiere 2259 n'est pas dans le maillage 8519 1861
+   Attention l'arete frontiere 2260 n'est pas dans le maillage 1861 8521
+   Attention l'arete frontiere 2261 n'est pas dans le maillage 8521 1877
+   Attention l'arete frontiere 2262 n'est pas dans le maillage 1879 8526
+   Attention l'arete frontiere 2263 n'est pas dans le maillage 8526 1878
+   Attention l'arete frontiere 2264 n'est pas dans le maillage 1863 8528
+   Attention l'arete frontiere 2265 n'est pas dans le maillage 8528 1869
+   Attention l'arete frontiere 2266 n'est pas dans le maillage 1883 8532
+   Attention l'arete frontiere 2269 n'est pas dans le maillage 8533 1886
+   Attention l'arete frontiere 2270 n'est pas dans le maillage 1882 8540
+   Attention l'arete frontiere 2271 n'est pas dans le maillage 8540 1881
+   Attention l'arete frontiere 2272 n'est pas dans le maillage 1892 8544
+   Attention l'arete frontiere 2273 n'est pas dans le maillage 8544 1883
+   Attention l'arete frontiere 2274 n'est pas dans le maillage 1886 8547
+   Attention l'arete frontiere 2275 n'est pas dans le maillage 8547 1887
+   Attention l'arete frontiere 2276 n'est pas dans le maillage 1887 8548
+   Attention l'arete frontiere 2277 n'est pas dans le maillage 8548 1885
+   Attention l'arete frontiere 2278 n'est pas dans le maillage 1881 8551
+   Attention l'arete frontiere 2279 n'est pas dans le maillage 8551 1888
+   Attention l'arete frontiere 2280 n'est pas dans le maillage 1888 8555
+   Attention l'arete frontiere 2281 n'est pas dans le maillage 8555 1889
+   Attention l'arete frontiere 2282 n'est pas dans le maillage 1919 8557
+   Attention l'arete frontiere 2283 n'est pas dans le maillage 8557 1892
+   Attention l'arete frontiere 2284 n'est pas dans le maillage 1889 8561
+   Attention l'arete frontiere 2285 n'est pas dans le maillage 8561 1894
+   Attention l'arete frontiere 2286 n'est pas dans le maillage 1894 8562
+   Attention l'arete frontiere 2287 n'est pas dans le maillage 8562 1893
+   Attention l'arete frontiere 2288 n'est pas dans le maillage 1911 8577
+   Attention l'arete frontiere 2289 n'est pas dans le maillage 8577 1899
+   Attention l'arete frontiere 2290 n'est pas dans le maillage 1899 8578
+   Attention l'arete frontiere 2291 n'est pas dans le maillage 8578 1900
+   Attention l'arete frontiere 2293 n'est pas dans le maillage 8580 1890
+   Attention l'arete frontiere 2294 n'est pas dans le maillage 1890 8583
+   Attention l'arete frontiere 2295 n'est pas dans le maillage 8583 1901
+   Attention l'arete frontiere 2296 n'est pas dans le maillage 1893 8586
+   Attention l'arete frontiere 2298 n'est pas dans le maillage 1904 8595
+   Attention l'arete frontiere 2300 n'est pas dans le maillage 1901 8606
+   Attention l'arete frontiere 2301 n'est pas dans le maillage 8606 1906
+   Attention l'arete frontiere 2302 n'est pas dans le maillage 1906 8607
+   Attention l'arete frontiere 2303 n'est pas dans le maillage 8607 1907
+   Attention l'arete frontiere 2304 n'est pas dans le maillage 1909 8611
+   Attention l'arete frontiere 2305 n'est pas dans le maillage 8611 1912
+   Attention l'arete frontiere 2306 n'est pas dans le maillage 1900 8615
+   Attention l'arete frontiere 2307 n'est pas dans le maillage 8615 1910
+   Attention l'arete frontiere 2308 n'est pas dans le maillage 1910 8616
+   Attention l'arete frontiere 2309 n'est pas dans le maillage 8616 1904
+   Attention l'arete frontiere 2310 n'est pas dans le maillage 1907 8620
+   Attention l'arete frontiere 2313 n'est pas dans le maillage 8621 1911
+   Attention l'arete frontiere 2314 n'est pas dans le maillage 1912 8624
+   Attention l'arete frontiere 2315 n'est pas dans le maillage 8624 1917
+   Attention l'arete frontiere 2317 n'est pas dans le maillage 8628 1913
+   Attention l'arete frontiere 2318 n'est pas dans le maillage 1914 8639
+   Attention l'arete frontiere 2320 n'est pas dans le maillage 1917 8641
+   Attention l'arete frontiere 2321 n'est pas dans le maillage 8641 1914
+   Attention l'arete frontiere 2323 n'est pas dans le maillage 8646 1891
+   Attention l'arete frontiere 2324 n'est pas dans le maillage 1891 8648
+   Attention l'arete frontiere 2325 n'est pas dans le maillage 8648 1919
+   Attention l'arete frontiere 2326 n'est pas dans le maillage 1913 8650
+   Attention l'arete frontiere 2327 n'est pas dans le maillage 8650 1920
+   Attention l'arete frontiere 2328 n'est pas dans le maillage 1920 8654
+   Attention l'arete frontiere 2329 n'est pas dans le maillage 8654 1921
+   Attention l'arete frontiere 2331 n'est pas dans le maillage 8656 1922
+   Attention l'arete frontiere 2332 n'est pas dans le maillage 1922 8662
+   Attention l'arete frontiere 2333 n'est pas dans le maillage 8662 1909
+   Attention l'arete frontiere 2334 n'est pas dans le maillage 1921 8664
+   Attention l'arete frontiere 2339 n'est pas dans le maillage 8667 1939
+   Attention l'arete frontiere 2344 n'est pas dans le maillage 1929 8673
+   Attention l'arete frontiere 2346 n'est pas dans le maillage 1938 8676
+   Attention l'arete frontiere 2347 n'est pas dans le maillage 8676 1930
+   Attention l'arete frontiere 2348 n'est pas dans le maillage 1937 8680
+   Attention l'arete frontiere 2349 n'est pas dans le maillage 8680 1929
+   Attention l'arete frontiere 2350 n'est pas dans le maillage 1930 8685
+   Attention l'arete frontiere 2351 n'est pas dans le maillage 8685 1932
+   Attention l'arete frontiere 2353 n'est pas dans le maillage 8689 1933
+   Attention l'arete frontiere 2354 n'est pas dans le maillage 1934 8691
+   Attention l'arete frontiere 2356 n'est pas dans le maillage 1946 8698
+   Attention l'arete frontiere 2357 n'est pas dans le maillage 8698 1936
+   Attention l'arete frontiere 2358 n'est pas dans le maillage 1936 8700
+   Attention l'arete frontiere 2359 n'est pas dans le maillage 8700 1937
+   Attention l'arete frontiere 2360 n'est pas dans le maillage 1939 8705
+   Attention l'arete frontiere 2361 n'est pas dans le maillage 8705 1938
+   Attention l'arete frontiere 2362 n'est pas dans le maillage 1932 8707
+   Attention l'arete frontiere 2365 n'est pas dans le maillage 8709 1934
+   Attention l'arete frontiere 2366 n'est pas dans le maillage 1980 8713
+   Attention l'arete frontiere 2367 n'est pas dans le maillage 8713 1942
+   Attention l'arete frontiere 2368 n'est pas dans le maillage 1943 8715
+   Attention l'arete frontiere 2370 n'est pas dans le maillage 1942 8720
+   Attention l'arete frontiere 2373 n'est pas dans le maillage 8721 1943
+   Attention l'arete frontiere 2374 n'est pas dans le maillage 1945 8725
+   Attention l'arete frontiere 2375 n'est pas dans le maillage 8725 1946
+   Attention l'arete frontiere 2377 n'est pas dans le maillage 8726 1947
+   Attention l'arete frontiere 2378 n'est pas dans le maillage 1947 8732
+   Attention l'arete frontiere 2379 n'est pas dans le maillage 8732 1945
+   Attention l'arete frontiere 2380 n'est pas dans le maillage 1933 8735
+   Attention l'arete frontiere 2381 n'est pas dans le maillage 8735 1950
+   Attention l'arete frontiere 2382 n'est pas dans le maillage 1950 8736
+   Attention l'arete frontiere 2383 n'est pas dans le maillage 8736 1972
+   Attention l'arete frontiere 2384 n'est pas dans le maillage 1953 8738
+   Attention l'arete frontiere 2387 n'est pas dans le maillage 8745 1953
+   Attention l'arete frontiere 2389 n'est pas dans le maillage 8750 1986
+   Attention l'arete frontiere 2390 n'est pas dans le maillage 1955 8756
+   Attention l'arete frontiere 2391 n'est pas dans le maillage 8756 1958
+   Attention l'arete frontiere 2392 n'est pas dans le maillage 1958 8764
+   Attention l'arete frontiere 2394 n'est pas dans le maillage 1960 8768
+   Attention l'arete frontiere 2397 n'est pas dans le maillage 8769 1961
+   Attention l'arete frontiere 2398 n'est pas dans le maillage 1973 8780
+   Attention l'arete frontiere 2399 n'est pas dans le maillage 8780 1963
+   Attention l'arete frontiere 2400 n'est pas dans le maillage 1963 8781
+   Attention l'arete frontiere 2401 n'est pas dans le maillage 8781 1960
+   Attention l'arete frontiere 2402 n'est pas dans le maillage 1965 8785
+   Attention l'arete frontiere 2403 n'est pas dans le maillage 8785 1964
+   Attention l'arete frontiere 2404 n'est pas dans le maillage 1998 8795
+   Attention l'arete frontiere 2405 n'est pas dans le maillage 8795 1967
+   Attention l'arete frontiere 2406 n'est pas dans le maillage 1967 8796
+   Attention l'arete frontiere 2407 n'est pas dans le maillage 8796 1968
+   Attention l'arete frontiere 2408 n'est pas dans le maillage 1971 8799
+   Attention l'arete frontiere 2409 n'est pas dans le maillage 8799 1969
+   Attention l'arete frontiere 2410 n'est pas dans le maillage 1969 8800
+   Attention l'arete frontiere 2411 n'est pas dans le maillage 8800 1976
+   Attention l'arete frontiere 2412 n'est pas dans le maillage 1970 8804
+   Attention l'arete frontiere 2415 n'est pas dans le maillage 8805 1971
+   Attention l'arete frontiere 2416 n'est pas dans le maillage 1990 8808
+   Attention l'arete frontiere 2417 n'est pas dans le maillage 8808 1965
+   Attention l'arete frontiere 2418 n'est pas dans le maillage 1972 8810
+   Attention l'arete frontiere 2421 n'est pas dans le maillage 8811 1973
+   Attention l'arete frontiere 2422 n'est pas dans le maillage 1961 8817
+   Attention l'arete frontiere 2423 n'est pas dans le maillage 8817 1970
+   Attention l'arete frontiere 2424 n'est pas dans le maillage 1976 8828
+   Attention l'arete frontiere 2427 n'est pas dans le maillage 8838 1980
+   Attention l'arete frontiere 2428 n'est pas dans le maillage 1964 8841
+   Attention l'arete frontiere 2430 n'est pas dans le maillage 1983 8848
+   Attention l'arete frontiere 2432 n'est pas dans le maillage 1985 8856
+   Attention l'arete frontiere 2437 n'est pas dans le maillage 8858 1985
+   Attention l'arete frontiere 2438 n'est pas dans le maillage 1986 8860
+   Attention l'arete frontiere 2439 n'est pas dans le maillage 8860 1955
+   Attention l'arete frontiere 2441 n'est pas dans le maillage 8863 1987
+   Attention l'arete frontiere 2442 n'est pas dans le maillage 1968 8879
+   Attention l'arete frontiere 2445 n'est pas dans le maillage 8880 1990
+   Attention l'arete frontiere 2447 n'est pas dans le maillage 8893 1983
+   Attention l'arete frontiere 2448 n'est pas dans le maillage 2014 8903
+   Attention l'arete frontiere 2451 n'est pas dans le maillage 8904 1995
+   Attention l'arete frontiere 2452 n'est pas dans le maillage 1995 8908
+   Attention l'arete frontiere 2457 n'est pas dans le maillage 8919 1998
+   Attention l'arete frontiere 2460 n'est pas dans le maillage 2011 8946
+   Attention l'arete frontiere 2461 n'est pas dans le maillage 8946 2009
+   Attention l'arete frontiere 2462 n'est pas dans le maillage 2020 8948
+   Attention l'arete frontiere 2465 n'est pas dans le maillage 8949 2013
+   Attention l'arete frontiere 2466 n'est pas dans le maillage 1987 8955
+   Attention l'arete frontiere 2467 n'est pas dans le maillage 8955 2011
+   Attention l'arete frontiere 2468 n'est pas dans le maillage 2008 8958
+   Attention l'arete frontiere 2469 n'est pas dans le maillage 8958 2014
+   Attention l'arete frontiere 2470 n'est pas dans le maillage 2013 8959
+   Attention l'arete frontiere 2471 n'est pas dans le maillage 8959 2008
+   Attention l'arete frontiere 2472 n'est pas dans le maillage 2016 8962
+   Attention l'arete frontiere 2473 n'est pas dans le maillage 8962 2035
+   Attention l'arete frontiere 2474 n'est pas dans le maillage 2035 8963
+   Attention l'arete frontiere 2475 n'est pas dans le maillage 8963 2015
+   Attention l'arete frontiere 2477 n'est pas dans le maillage 8966 2016
+   Attention l'arete frontiere 2478 n'est pas dans le maillage 2015 8974
+   Attention l'arete frontiere 2481 n'est pas dans le maillage 8975 2019
+   Attention l'arete frontiere 2482 n'est pas dans le maillage 2012 8979
+   Attention l'arete frontiere 2483 n'est pas dans le maillage 8979 2020
+   Attention l'arete frontiere 2484 n'est pas dans le maillage 2019 8980
+   Attention l'arete frontiere 2485 n'est pas dans le maillage 8980 2012
+   Attention l'arete frontiere 2486 n'est pas dans le maillage 2009 8993
+   Attention l'arete frontiere 2489 n'est pas dans le maillage 9002 2027
+   Attention l'arete frontiere 2490 n'est pas dans le maillage 2041 9004
+   Attention l'arete frontiere 2491 n'est pas dans le maillage 9004 2028
+   Attention l'arete frontiere 2492 n'est pas dans le maillage 2028 9008
+   Attention l'arete frontiere 2493 n'est pas dans le maillage 9008 2029
+   Attention l'arete frontiere 2495 n'est pas dans le maillage 9018 2031
+   Attention l'arete frontiere 2496 n'est pas dans le maillage 1300 9030
+   Attention l'arete frontiere 2497 n'est pas dans le maillage 9030 2034
+   Attention l'arete frontiere 2498 n'est pas dans le maillage 2034 9031
+   Attention l'arete frontiere 2499 n'est pas dans le maillage 9031 2050
+   Attention l'arete frontiere 2500 n'est pas dans le maillage 2056 9033
+   Attention l'arete frontiere 2503 n'est pas dans le maillage 9037 2056
+   Attention l'arete frontiere 2504 n'est pas dans le maillage 2039 9046
+   Attention l'arete frontiere 2505 n'est pas dans le maillage 9046 2040
+   Attention l'arete frontiere 2506 n'est pas dans le maillage 2055 9048
+   Attention l'arete frontiere 2507 n'est pas dans le maillage 9048 2039
+   Attention l'arete frontiere 2508 n'est pas dans le maillage 2027 9053
+   Attention l'arete frontiere 2509 n'est pas dans le maillage 9053 2041
+   Attention l'arete frontiere 2510 n'est pas dans le maillage 2040 9066
+   Attention l'arete frontiere 2512 n'est pas dans le maillage 2050 9079
+   Attention l'arete frontiere 2514 n'est pas dans le maillage 2054 9087
+   Attention l'arete frontiere 2517 n'est pas dans le maillage 9091 2054
+   Attention l'arete frontiere 2518 n'est pas dans le maillage 2031 9095
+   Attention l'arete frontiere 2519 n'est pas dans le maillage 9095 2051
+   Attention l'arete frontiere 2520 n'est pas dans le maillage 2051 9096
+   Attention l'arete frontiere 2521 n'est pas dans le maillage 9096 2055
+   Attention l'arete frontiere 2522 n'est pas dans le maillage 2058 9097
+   Attention l'arete frontiere 2525 n'est pas dans le maillage 9101 2058
+   Attention l'arete frontiere 2527 n'est pas dans le maillage 9114 2067
+   Attention l'arete frontiere 2528 n'est pas dans le maillage 2062 9123
+   Attention l'arete frontiere 2533 n'est pas dans le maillage 9126 2062
+   Attention l'arete frontiere 2534 n'est pas dans le maillage 2067 9141
+   Attention l'arete frontiere 2535 n'est pas dans le maillage 9141 2068
+   Attention l'arete frontiere 2536 n'est pas dans le maillage 2068 9142
+   Attention l'arete frontiere 2537 n'est pas dans le maillage 9142 2072
+   Attention l'arete frontiere 2538 n'est pas dans le maillage 2069 9144
+   Attention l'arete frontiere 2539 n'est pas dans le maillage 9144 2074
+   Attention l'arete frontiere 2540 n'est pas dans le maillage 2085 9146
+   Attention l'arete frontiere 2541 n'est pas dans le maillage 9146 2069
+   Attention l'arete frontiere 2542 n'est pas dans le maillage 2072 9153
+   Attention l'arete frontiere 2544 n'est pas dans le maillage 2074 9169
+   Attention l'arete frontiere 2547 n'est pas dans le maillage 9170 2075
+   Attention l'arete frontiere 2548 n'est pas dans le maillage 2082 9182
+   Attention l'arete frontiere 2549 n'est pas dans le maillage 9182 2080
+   Attention l'arete frontiere 2550 n'est pas dans le maillage 2080 9184
+   Attention l'arete frontiere 2553 n'est pas dans le maillage 9187 2081
+   Attention l'arete frontiere 2554 n'est pas dans le maillage 2081 9190
+   Attention l'arete frontiere 2555 n'est pas dans le maillage 9190 2082
+   Attention l'arete frontiere 2557 n'est pas dans le maillage 9191 2085
+   Attention l'arete frontiere 2558 n'est pas dans le maillage 2086 9198
+   Attention l'arete frontiere 2560 n'est pas dans le maillage 2090 9201
+   Attention l'arete frontiere 2561 n'est pas dans le maillage 9201 2086
+   Attention l'arete frontiere 2562 n'est pas dans le maillage 2089 9206
+   Attention l'arete frontiere 2563 n'est pas dans le maillage 9206 2088
+   Attention l'arete frontiere 2564 n'est pas dans le maillage 2093 9209
+   Attention l'arete frontiere 2565 n'est pas dans le maillage 9209 2090
+   Attention l'arete frontiere 2566 n'est pas dans le maillage 2075 9211
+   Attention l'arete frontiere 2567 n'est pas dans le maillage 9211 2089
+   Attention l'arete frontiere 2568 n'est pas dans le maillage 2106 9216
+   Attention l'arete frontiere 2569 n'est pas dans le maillage 9216 2100
+   Attention l'arete frontiere 2571 n'est pas dans le maillage 9219 2103
+   Attention l'arete frontiere 2572 n'est pas dans le maillage 2103 9220
+   Attention l'arete frontiere 2573 n'est pas dans le maillage 9220 2093
+   Attention l'arete frontiere 2574 n'est pas dans le maillage 2088 9223
+   Attention l'arete frontiere 2575 n'est pas dans le maillage 9223 2098
+   Attention l'arete frontiere 2577 n'est pas dans le maillage 9224 2095
+   Attention l'arete frontiere 2580 n'est pas dans le maillage 2095 9227
+   Attention l'arete frontiere 2581 n'est pas dans le maillage 9227 2119
+   Attention l'arete frontiere 2582 n'est pas dans le maillage 2097 9235
+   Attention l'arete frontiere 2584 n'est pas dans le maillage 2098 9239
+   Attention l'arete frontiere 2585 n'est pas dans le maillage 9239 2097
+   Attention l'arete frontiere 2586 n'est pas dans le maillage 2100 9240
+   Attention l'arete frontiere 2587 n'est pas dans le maillage 9240 2099
+   Attention l'arete frontiere 2588 n'est pas dans le maillage 2104 9250
+   Attention l'arete frontiere 2590 n'est pas dans le maillage 2099 9253
+   Attention l'arete frontiere 2591 n'est pas dans le maillage 9253 2104
+   Attention l'arete frontiere 2592 n'est pas dans le maillage 2105 9257
+   Attention l'arete frontiere 2594 n'est pas dans le maillage 2122 9265
+   Attention l'arete frontiere 2595 n'est pas dans le maillage 9265 2106
+   Attention l'arete frontiere 2596 n'est pas dans le maillage 2108 9267
+   Attention l'arete frontiere 2597 n'est pas dans le maillage 9267 2109
+   Attention l'arete frontiere 2598 n'est pas dans le maillage 2109 9268
+   Attention l'arete frontiere 2599 n'est pas dans le maillage 9268 2105
+   Attention l'arete frontiere 2600 n'est pas dans le maillage 2146 9276
+   Attention l'arete frontiere 2601 n'est pas dans le maillage 9276 2147
+   Attention l'arete frontiere 2602 n'est pas dans le maillage 2111 9281
+   Attention l'arete frontiere 2605 n'est pas dans le maillage 9285 2123
+   Attention l'arete frontiere 2608 n'est pas dans le maillage 2123 9288
+   Attention l'arete frontiere 2610 n'est pas dans le maillage 2140 9293
+   Attention l'arete frontiere 2611 n'est pas dans le maillage 9293 2131
+   Attention l'arete frontiere 2612 n'est pas dans le maillage 2126 9298
+   Attention l'arete frontiere 2613 n'est pas dans le maillage 9298 2114
+   Attention l'arete frontiere 2615 n'est pas dans le maillage 9301 2116
+   Attention l'arete frontiere 2616 n'est pas dans le maillage 2116 9303
+   Attention l'arete frontiere 2618 n'est pas dans le maillage 2114 9307
+   Attention l'arete frontiere 2619 n'est pas dans le maillage 9307 2118
+   Attention l'arete frontiere 2620 n'est pas dans le maillage 2119 9312
+   Attention l'arete frontiere 2621 n'est pas dans le maillage 9312 2108
+   Attention l'arete frontiere 2622 n'est pas dans le maillage 2118 9317
+   Attention l'arete frontiere 2623 n'est pas dans le maillage 9317 2121
+   Attention l'arete frontiere 2624 n'est pas dans le maillage 2121 9319
+   Attention l'arete frontiere 2625 n'est pas dans le maillage 9319 2122
+   Attention l'arete frontiere 2627 n'est pas dans le maillage 9333 2126
+   Attention l'arete frontiere 2629 n'est pas dans le maillage 9335 2111
+   Attention l'arete frontiere 2631 n'est pas dans le maillage 9338 2137
+   Attention l'arete frontiere 2632 n'est pas dans le maillage 2137 9339
+   Attention l'arete frontiere 2633 n'est pas dans le maillage 9339 2130
+   Attention l'arete frontiere 2634 n'est pas dans le maillage 2143 9343
+   Attention l'arete frontiere 2636 n'est pas dans le maillage 2130 9345
+   Attention l'arete frontiere 2637 n'est pas dans le maillage 9345 2143
+   Attention l'arete frontiere 2638 n'est pas dans le maillage 2131 9348
+   Attention l'arete frontiere 2641 n'est pas dans le maillage 9355 2144
+   Attention l'arete frontiere 2642 n'est pas dans le maillage 2139 9362
+   Attention l'arete frontiere 2643 n'est pas dans le maillage 9362 2140
+   Attention l'arete frontiere 2644 n'est pas dans le maillage 2144 9369
+   Attention l'arete frontiere 2648 n'est pas dans le maillage 2145 9373
+   Attention l'arete frontiere 2649 n'est pas dans le maillage 9373 2146
+   Attention l'arete frontiere 2650 n'est pas dans le maillage 2150 9375
+   Attention l'arete frontiere 2651 n'est pas dans le maillage 9375 2145
+   Attention l'arete frontiere 2652 n'est pas dans le maillage 2147 9379
+   Attention l'arete frontiere 2653 n'est pas dans le maillage 9379 2148
+   Attention l'arete frontiere 2655 n'est pas dans le maillage 9384 2139
+   Attention l'arete frontiere 2657 n'est pas dans le maillage 9387 2150
+   Attention l'arete frontiere 2658 n'est pas dans le maillage 1237 9396
+   Attention l'arete frontiere 2660 n'est pas dans le maillage 2153 9402
+   Attention l'arete frontiere 2661 n'est pas dans le maillage 9402 2169
+   Attention l'arete frontiere 2662 n'est pas dans le maillage 2169 9403
+   Attention l'arete frontiere 2663 n'est pas dans le maillage 9403 2152
+   Attention l'arete frontiere 2664 n'est pas dans le maillage 2985 9411
+   Attention l'arete frontiere 2666 n'est pas dans le maillage 2172 9426
+   Attention l'arete frontiere 2668 n'est pas dans le maillage 1204 9430
+   Attention l'arete frontiere 2669 n'est pas dans le maillage 9430 2163
+   Attention l'arete frontiere 2670 n'est pas dans le maillage 2165 9433
+   Attention l'arete frontiere 2671 n'est pas dans le maillage 9433 1299
+   Attention l'arete frontiere 2672 n'est pas dans le maillage 2164 9435
+   Attention l'arete frontiere 2673 n'est pas dans le maillage 9435 2165
+   Attention l'arete frontiere 2674 n'est pas dans le maillage 2152 9436
+   Attention l'arete frontiere 2677 n'est pas dans le maillage 9439 2167
+   Attention l'arete frontiere 2678 n'est pas dans le maillage 2168 9441
+   Attention l'arete frontiere 2680 n'est pas dans le maillage 2167 9444
+   Attention l'arete frontiere 2681 n'est pas dans le maillage 9444 2168
+   Attention l'arete frontiere 2682 n'est pas dans le maillage 2186 9446
+   Attention l'arete frontiere 2684 n'est pas dans le maillage 2171 9449
+   Attention l'arete frontiere 2685 n'est pas dans le maillage 9449 2172
+   Attention l'arete frontiere 2686 n'est pas dans le maillage 2206 9451
+   Attention l'arete frontiere 2687 n'est pas dans le maillage 9451 2171
+   Attention l'arete frontiere 2689 n'est pas dans le maillage 9453 2155
+   Attention l'arete frontiere 2690 n'est pas dans le maillage 2155 9455
+   Attention l'arete frontiere 2691 n'est pas dans le maillage 9455 2153
+   Attention l'arete frontiere 2692 n'est pas dans le maillage 2216 9458
+   Attention l'arete frontiere 2694 n'est pas dans le maillage 1243 9479
+   Attention l'arete frontiere 2695 n'est pas dans le maillage 9479 2181
+   Attention l'arete frontiere 2696 n'est pas dans le maillage 2181 9480
+   Attention l'arete frontiere 2697 n'est pas dans le maillage 9480 2180
+   Attention l'arete frontiere 2699 n'est pas dans le maillage 9482 2182
+   Attention l'arete frontiere 2700 n'est pas dans le maillage 2156 9484
+   Attention l'arete frontiere 2702 n'est pas dans le maillage 2215 9486
+   Attention l'arete frontiere 2703 n'est pas dans le maillage 9486 2156
+   Attention l'arete frontiere 2704 n'est pas dans le maillage 2197 9505
+   Attention l'arete frontiere 2705 n'est pas dans le maillage 9505 2186
+   Attention l'arete frontiere 2707 n'est pas dans le maillage 9513 2213
+   Attention l'arete frontiere 2708 n'est pas dans le maillage 1247 9515
+   Attention l'arete frontiere 2710 n'est pas dans le maillage 2191 9518
+   Attention l'arete frontiere 2711 n'est pas dans le maillage 9518 1247
+   Attention l'arete frontiere 2712 n'est pas dans le maillage 2148 9520
+   Attention l'arete frontiere 2713 n'est pas dans le maillage 9520 2164
+   Attention l'arete frontiere 2714 n'est pas dans le maillage 1227 9529
+   Attention l'arete frontiere 2715 n'est pas dans le maillage 9529 1226
+   Attention l'arete frontiere 2716 n'est pas dans le maillage 2194 9531
+   Attention l'arete frontiere 2717 n'est pas dans le maillage 9531 1227
+   Attention l'arete frontiere 2719 n'est pas dans le maillage 9535 1228
+   Attention l'arete frontiere 2720 n'est pas dans le maillage 2196 9542
+   Attention l'arete frontiere 2721 n'est pas dans le maillage 9542 2197
+   Attention l'arete frontiere 2723 n'est pas dans le maillage 9556 2202
+   Attention l'arete frontiere 2725 n'est pas dans le maillage 9559 2204
+   Attention l'arete frontiere 2726 n'est pas dans le maillage 2163 9567
+   Attention l'arete frontiere 2727 n'est pas dans le maillage 9567 2206
+   Attention l'arete frontiere 2729 n'est pas dans le maillage 9594 2174
+   Attention l'arete frontiere 2730 n'est pas dans le maillage 2213 9596
+   Attention l'arete frontiere 2732 n'est pas dans le maillage 2174 9597
+   Attention l'arete frontiere 2733 n'est pas dans le maillage 9597 2214
+   Attention l'arete frontiere 2734 n'est pas dans le maillage 2214 9599
+   Attention l'arete frontiere 2735 n'est pas dans le maillage 9599 2215
+   Attention l'arete frontiere 2737 n'est pas dans le maillage 9600 2217
+   Attention l'arete frontiere 2738 n'est pas dans le maillage 2217 9604
+   Attention l'arete frontiere 2739 n'est pas dans le maillage 9604 2216
+   Attention l'arete frontiere 2742 n'est pas dans le maillage 2894 9607
+   Attention l'arete frontiere 2744 n'est pas dans le maillage 2272 9612
+   Attention l'arete frontiere 2745 n'est pas dans le maillage 9612 2219
+   Attention l'arete frontiere 2746 n'est pas dans le maillage 2220 9616
+   Attention l'arete frontiere 2749 n'est pas dans le maillage 9617 2221
+   Attention l'arete frontiere 2751 n'est pas dans le maillage 9633 2225
+   Attention l'arete frontiere 2752 n'est pas dans le maillage 2225 9635
+   Attention l'arete frontiere 2755 n'est pas dans le maillage 9652 2863
+   Attention l'arete frontiere 2756 n'est pas dans le maillage 2239 9666
+   Attention l'arete frontiere 2759 n'est pas dans le maillage 9670 2807
+   Attention l'arete frontiere 2760 n'est pas dans le maillage 2807 9674
+   Attention l'arete frontiere 2761 n'est pas dans le maillage 9674 2858
+   Attention l'arete frontiere 2763 n'est pas dans le maillage 9675 2238
+   Attention l'arete frontiere 2764 n'est pas dans le maillage 2238 9678
+   Attention l'arete frontiere 2766 n'est pas dans le maillage 2862 9685
+   Attention l'arete frontiere 2767 n'est pas dans le maillage 9685 2239
+   Attention l'arete frontiere 2768 n'est pas dans le maillage 2243 9702
+   Attention l'arete frontiere 2769 n'est pas dans le maillage 9702 2244
+   Attention l'arete frontiere 2771 n'est pas dans le maillage 9790 2262
+   Attention l'arete frontiere 2772 n'est pas dans le maillage 2262 9792
+   Attention l'arete frontiere 2773 n'est pas dans le maillage 9792 2263
+   Attention l'arete frontiere 2774 n'est pas dans le maillage 2831 9812
+   Attention l'arete frontiere 2775 n'est pas dans le maillage 9812 2269
+   Attention l'arete frontiere 2776 n'est pas dans le maillage 2269 9813
+   Attention l'arete frontiere 2777 n'est pas dans le maillage 9813 2243
+   Attention l'arete frontiere 2778 n'est pas dans le maillage 2221 9816
+   Attention l'arete frontiere 2779 n'est pas dans le maillage 9816 2270
+   Attention l'arete frontiere 2780 n'est pas dans le maillage 2735 9818
+   Attention l'arete frontiere 2782 n'est pas dans le maillage 2273 9822
+   Attention l'arete frontiere 2783 n'est pas dans le maillage 9822 2272
+   Attention l'arete frontiere 2784 n'est pas dans le maillage 2219 9825
+   Attention l'arete frontiere 2785 n'est pas dans le maillage 9825 2718
+   Attention l'arete frontiere 2786 n'est pas dans le maillage 2279 9848
+   Attention l'arete frontiere 2787 n'est pas dans le maillage 9848 2278
+   Attention l'arete frontiere 2789 n'est pas dans le maillage 9850 2280
+   Attention l'arete frontiere 2790 n'est pas dans le maillage 2280 9855
+   Attention l'arete frontiere 2791 n'est pas dans le maillage 9855 2320
+   Attention l'arete frontiere 2792 n'est pas dans le maillage 2284 9859
+   Attention l'arete frontiere 2793 n'est pas dans le maillage 9859 2285
+   Attention l'arete frontiere 2794 n'est pas dans le maillage 2285 9862
+   Attention l'arete frontiere 2799 n'est pas dans le maillage 9864 2284
+   Attention l'arete frontiere 2800 n'est pas dans le maillage 2326 9869
+   Attention l'arete frontiere 2801 n'est pas dans le maillage 9869 2363
+   Attention l'arete frontiere 2802 n'est pas dans le maillage 2289 9874
+   Attention l'arete frontiere 2803 n'est pas dans le maillage 9874 2288
+   Attention l'arete frontiere 2804 n'est pas dans le maillage 2303 9882
+   Attention l'arete frontiere 2806 n'est pas dans le maillage 2297 9902
+   Attention l'arete frontiere 2807 n'est pas dans le maillage 9902 2289
+   Attention l'arete frontiere 2808 n'est pas dans le maillage 2298 9904
+   Attention l'arete frontiere 2810 n'est pas dans le maillage 2300 9905
+   Attention l'arete frontiere 2813 n'est pas dans le maillage 9907 2299
+   Attention l'arete frontiere 2814 n'est pas dans le maillage 2299 9910
+   Attention l'arete frontiere 2815 n'est pas dans le maillage 9910 2300
+   Attention l'arete frontiere 2817 n'est pas dans le maillage 9914 2303
+   Attention l'arete frontiere 2822 n'est pas dans le maillage 2306 9920
+   Attention l'arete frontiere 2827 n'est pas dans le maillage 9928 2308
+   Attention l'arete frontiere 2828 n'est pas dans le maillage 2309 9930
+   Attention l'arete frontiere 2830 n'est pas dans le maillage 2288 9934
+   Attention l'arete frontiere 2831 n'est pas dans le maillage 9934 2309
+   Attention l'arete frontiere 2833 n'est pas dans le maillage 9944 2297
+   Attention l'arete frontiere 2835 n'est pas dans le maillage 9954 2340
+   Attention l'arete frontiere 2836 n'est pas dans le maillage 2316 9955
+   Attention l'arete frontiere 2837 n'est pas dans le maillage 9955 2315
+   Attention l'arete frontiere 2838 n'est pas dans le maillage 2320 9973
+   Attention l'arete frontiere 2839 n'est pas dans le maillage 9973 2322
+   Attention l'arete frontiere 2840 n'est pas dans le maillage 2322 9978
+   Attention l'arete frontiere 2841 n'est pas dans le maillage 9978 2298
+   Attention l'arete frontiere 2843 n'est pas dans le maillage 9986 2326
+   Attention l'arete frontiere 2845 n'est pas dans le maillage 10018 2336
+   Attention l'arete frontiere 2846 n'est pas dans le maillage 2378 10021
+   Attention l'arete frontiere 2847 n'est pas dans le maillage 10021 2343
+   Attention l'arete frontiere 2851 n'est pas dans le maillage 10023 2306
+   Attention l'arete frontiere 2852 n'est pas dans le maillage 2339 10026
+   Attention l'arete frontiere 2856 n'est pas dans le maillage 2340 10034
+   Attention l'arete frontiere 2859 n'est pas dans le maillage 10035 2292
+   Attention l'arete frontiere 2860 n'est pas dans le maillage 2292 10037
+   Attention l'arete frontiere 2861 n'est pas dans le maillage 10037 2339
+   Attention l'arete frontiere 2862 n'est pas dans le maillage 2343 10049
+   Attention l'arete frontiere 2864 n'est pas dans le maillage 2336 10077
+   Attention l'arete frontiere 2868 n'est pas dans le maillage 2349 10081
+   Attention l'arete frontiere 2870 n'est pas dans le maillage 2351 10083
+   Attention l'arete frontiere 2871 n'est pas dans le maillage 10083 2349
+   Attention l'arete frontiere 2872 n'est pas dans le maillage 2360 10086
+   Attention l'arete frontiere 2874 n'est pas dans le maillage 2308 10087
+   Attention l'arete frontiere 2876 n'est pas dans le maillage 2359 10103
+   Attention l'arete frontiere 2877 n'est pas dans le maillage 10103 2360
+   Attention l'arete frontiere 2879 n'est pas dans le maillage 10106 2361
+   Attention l'arete frontiere 2880 n'est pas dans le maillage 2361 10108
+   Attention l'arete frontiere 2881 n'est pas dans le maillage 10108 2359
+   Attention l'arete frontiere 2882 n'est pas dans le maillage 2363 10112
+   Attention l'arete frontiere 2883 n'est pas dans le maillage 10112 2316
+   Attention l'arete frontiere 2885 n'est pas dans le maillage 10134 2358
+   Attention l'arete frontiere 2886 n'est pas dans le maillage 2358 10136
+   Attention l'arete frontiere 2887 n'est pas dans le maillage 10136 2368
+   Attention l'arete frontiere 2888 n'est pas dans le maillage 2372 10141
+   Attention l'arete frontiere 2891 n'est pas dans le maillage 10145 2372
+   Attention l'arete frontiere 2895 n'est pas dans le maillage 10167 2378
+   Attention l'arete frontiere 2896 n'est pas dans le maillage 2382 10173
+   Attention l'arete frontiere 2897 n'est pas dans le maillage 10173 2380
+   Attention l'arete frontiere 2898 n'est pas dans le maillage 2380 10174
+   Attention l'arete frontiere 2899 n'est pas dans le maillage 10174 2351
+   Attention l'arete frontiere 2900 n'est pas dans le maillage 2381 10178
+   Attention l'arete frontiere 2903 n'est pas dans le maillage 10179 2382
+   Attention l'arete frontiere 2904 n'est pas dans le maillage 2383 10182
+   Attention l'arete frontiere 2905 n'est pas dans le maillage 10182 2406
+   Attention l'arete frontiere 2907 n'est pas dans le maillage 10192 2386
+   Attention l'arete frontiere 2908 n'est pas dans le maillage 2386 10193
+   Attention l'arete frontiere 2909 n'est pas dans le maillage 10193 2562
+   Attention l'arete frontiere 2910 n'est pas dans le maillage 2357 10220
+   Attention l'arete frontiere 2912 n'est pas dans le maillage 2315 10223
+   Attention l'arete frontiere 2913 n'est pas dans le maillage 10223 2357
+   Attention l'arete frontiere 2914 n'est pas dans le maillage 2393 10226
+   Attention l'arete frontiere 2915 n'est pas dans le maillage 10226 2585
+   Attention l'arete frontiere 2916 n'est pas dans le maillage 2399 10246
+   Attention l'arete frontiere 2917 n'est pas dans le maillage 10246 2381
+   Attention l'arete frontiere 2918 n'est pas dans le maillage 2586 10248
+   Attention l'arete frontiere 2919 n'est pas dans le maillage 10248 2399
+   Attention l'arete frontiere 2920 n'est pas dans le maillage 2406 10269
+   Attention l'arete frontiere 2921 n'est pas dans le maillage 10269 2393
+   Attention l'arete frontiere 2922 n'est pas dans le maillage 2368 10314
+   Attention l'arete frontiere 2925 n'est pas dans le maillage 10315 2447
+   Attention l'arete frontiere 2926 n'est pas dans le maillage 2419 10323
+   Attention l'arete frontiere 2927 n'est pas dans le maillage 10323 2417
+   Attention l'arete frontiere 2928 n'est pas dans le maillage 2417 10324
+   Attention l'arete frontiere 2929 n'est pas dans le maillage 10324 2418
+   Attention l'arete frontiere 2930 n'est pas dans le maillage 2416 10327
+   Attention l'arete frontiere 2931 n'est pas dans le maillage 10327 2420
+   Attention l'arete frontiere 2932 n'est pas dans le maillage 2418 10328
+   Attention l'arete frontiere 2933 n'est pas dans le maillage 10328 2416
+   Attention l'arete frontiere 2934 n'est pas dans le maillage 2598 10349
+   Attention l'arete frontiere 2936 n'est pas dans le maillage 2596 10351
+   Attention l'arete frontiere 2937 n'est pas dans le maillage 10351 2598
+   Attention l'arete frontiere 2938 n'est pas dans le maillage 2428 10354
+   Attention l'arete frontiere 2943 n'est pas dans le maillage 10356 2428
+   Attention l'arete frontiere 2944 n'est pas dans le maillage 2604 10358
+   Attention l'arete frontiere 2946 n'est pas dans le maillage 2432 10365
+   Attention l'arete frontiere 2947 n'est pas dans le maillage 10365 2431
+   Attention l'arete frontiere 2949 n'est pas dans le maillage 10374 2434
+   Attention l'arete frontiere 2950 n'est pas dans le maillage 2420 10379
+   Attention l'arete frontiere 2951 n'est pas dans le maillage 10379 2592
+   Attention l'arete frontiere 2952 n'est pas dans le maillage 2447 10412
+   Attention l'arete frontiere 2953 n'est pas dans le maillage 10412 2445
+   Attention l'arete frontiere 2954 n'est pas dans le maillage 2445 10413
+   Attention l'arete frontiere 2955 n'est pas dans le maillage 10413 2446
+   Attention l'arete frontiere 2956 n'est pas dans le maillage 2446 10418
+   Attention l'arete frontiere 2957 n'est pas dans le maillage 10418 2419
+   Attention l'arete frontiere 2958 n'est pas dans le maillage 2452 10425
+   Attention l'arete frontiere 2959 n'est pas dans le maillage 10425 2451
+   Attention l'arete frontiere 2960 n'est pas dans le maillage 2453 10428
+   Attention l'arete frontiere 2961 n'est pas dans le maillage 10428 2454
+   Attention l'arete frontiere 2962 n'est pas dans le maillage 2614 10513
+   Attention l'arete frontiere 2963 n'est pas dans le maillage 10513 2475
+   Attention l'arete frontiere 2964 n'est pas dans le maillage 2431 10536
+   Attention l'arete frontiere 2965 n'est pas dans le maillage 10536 2452
+   Attention l'arete frontiere 2966 n'est pas dans le maillage 2434 10547
+   Attention l'arete frontiere 2967 n'est pas dans le maillage 10547 2432
+   Attention l'arete frontiere 2968 n'est pas dans le maillage 2487 10559
+   Attention l'arete frontiere 2969 n'est pas dans le maillage 10559 2488
+   Attention l'arete frontiere 2970 n'est pas dans le maillage 2488 10564
+   Attention l'arete frontiere 2971 n'est pas dans le maillage 10564 2489
+   Attention l'arete frontiere 2972 n'est pas dans le maillage 2544 10574
+   Attention l'arete frontiere 2973 n'est pas dans le maillage 10574 2493
+   Attention l'arete frontiere 2974 n'est pas dans le maillage 2493 10577
+   Attention l'arete frontiere 2975 n'est pas dans le maillage 10577 2492
+   Attention l'arete frontiere 2976 n'est pas dans le maillage 2499 10596
+   Attention l'arete frontiere 2977 n'est pas dans le maillage 10596 2498
+   Attention l'arete frontiere 2978 n'est pas dans le maillage 2514 10643
+   Attention l'arete frontiere 2979 n'est pas dans le maillage 10643 2279
+   Attention l'arete frontiere 2980 n'est pas dans le maillage 2515 10648
+   Attention l'arete frontiere 2981 n'est pas dans le maillage 10648 2516
+   Attention l'arete frontiere 2983 n'est pas dans le maillage 10651 2514
+   Attention l'arete frontiere 2985 n'est pas dans le maillage 10659 2520
+   Attention l'arete frontiere 2986 n'est pas dans le maillage 2520 10660
+   Attention l'arete frontiere 2987 n'est pas dans le maillage 10660 2515
+   Attention l'arete frontiere 2989 n'est pas dans le maillage 10675 2526
+   Attention l'arete frontiere 2990 n'est pas dans le maillage 2526 10682
+   Attention l'arete frontiere 2991 n'est pas dans le maillage 10682 2623
+   Attention l'arete frontiere 2992 n'est pas dans le maillage 2623 10683
+   Attention l'arete frontiere 2993 n'est pas dans le maillage 10683 2525
+   Attention l'arete frontiere 2994 n'est pas dans le maillage 2531 10699
+   Attention l'arete frontiere 2996 n'est pas dans le maillage 2489 10701
+   Attention l'arete frontiere 2997 n'est pas dans le maillage 10701 2531
+   Attention l'arete frontiere 2998 n'est pas dans le maillage 2617 10710
+   Attention l'arete frontiere 2999 n'est pas dans le maillage 10710 2609
+   Attention l'arete frontiere 3000 n'est pas dans le maillage 2608 10712
+   Attention l'arete frontiere 3004 n'est pas dans le maillage 2534 10716
+   Attention l'arete frontiere 3006 n'est pas dans le maillage 2278 10718
+   Attention l'arete frontiere 3007 n'est pas dans le maillage 10718 2534
+   Attention l'arete frontiere 3008 n'est pas dans le maillage 2516 10720
+   Attention l'arete frontiere 3010 n'est pas dans le maillage 2451 10740
+   Attention l'arete frontiere 3013 n'est pas dans le maillage 10741 2453
+   Attention l'arete frontiere 3014 n'est pas dans le maillage 2454 10757
+   Attention l'arete frontiere 3015 n'est pas dans le maillage 10757 2545
+   Attention l'arete frontiere 3016 n'est pas dans le maillage 2545 10759
+   Attention l'arete frontiere 3017 n'est pas dans le maillage 10759 2544
+   Attention l'arete frontiere 3018 n'est pas dans le maillage 2492 10770
+   Attention l'arete frontiere 3019 n'est pas dans le maillage 10770 2639
+   Attention l'arete frontiere 3020 n'est pas dans le maillage 2678 10772
+   Attention l'arete frontiere 3023 n'est pas dans le maillage 10773 2677
+   Attention l'arete frontiere 3025 n'est pas dans le maillage 10780 2550
+   Attention l'arete frontiere 3026 n'est pas dans le maillage 2550 10782
+   Attention l'arete frontiere 3028 n'est pas dans le maillage 2560 10816
+   Attention l'arete frontiere 3031 n'est pas dans le maillage 10823 2560
+   Attention l'arete frontiere 3032 n'est pas dans le maillage 2562 10826
+   Attention l'arete frontiere 3033 n'est pas dans le maillage 10826 2383
+   Attention l'arete frontiere 3035 n'est pas dans le maillage 10901 2506
+   Attention l'arete frontiere 3038 n'est pas dans le maillage 2506 10905
+   Attention l'arete frontiere 3040 n'est pas dans le maillage 2580 10907
+   Attention l'arete frontiere 3045 n'est pas dans le maillage 10909 2580
+   Attention l'arete frontiere 3046 n'est pas dans le maillage 2585 10932
+   Attention l'arete frontiere 3047 n'est pas dans le maillage 10932 2586
+   Attention l'arete frontiere 3048 n'est pas dans le maillage 2592 10955
+   Attention l'arete frontiere 3049 n'est pas dans le maillage 10955 2595
+   Attention l'arete frontiere 3050 n'est pas dans le maillage 2595 10963
+   Attention l'arete frontiere 3051 n'est pas dans le maillage 10963 2596
+   Attention l'arete frontiere 3053 n'est pas dans le maillage 10982 2604
+   Attention l'arete frontiere 3054 n'est pas dans le maillage 2622 10991
+   Attention l'arete frontiere 3056 n'est pas dans le maillage 2607 10999
+   Attention l'arete frontiere 3057 n'est pas dans le maillage 10999 2606
+   Attention l'arete frontiere 3058 n'est pas dans le maillage 2475 11004
+   Attention l'arete frontiere 3059 n'est pas dans le maillage 11004 2607
+   Attention l'arete frontiere 3060 n'est pas dans le maillage 2609 11009
+   Attention l'arete frontiere 3061 n'est pas dans le maillage 11009 2608
+   Attention l'arete frontiere 3062 n'est pas dans le maillage 2606 11014
+   Attention l'arete frontiere 3063 n'est pas dans le maillage 11014 2611
+   Attention l'arete frontiere 3065 n'est pas dans le maillage 11024 2614
+   Attention l'arete frontiere 3069 n'est pas dans le maillage 11031 2616
+   Attention l'arete frontiere 3071 n'est pas dans le maillage 11035 2618
+   Attention l'arete frontiere 3072 n'est pas dans le maillage 2618 11039
+   Attention l'arete frontiere 3073 n'est pas dans le maillage 11039 2617
+   Attention l'arete frontiere 3074 n'est pas dans le maillage 2611 11054
+   Attention l'arete frontiere 3075 n'est pas dans le maillage 11054 2527
+   Attention l'arete frontiere 3076 n'est pas dans le maillage 2527 11055
+   Attention l'arete frontiere 3077 n'est pas dans le maillage 11055 2622
+   Attention l'arete frontiere 3078 n'est pas dans le maillage 2624 11056
+   Attention l'arete frontiere 3080 n'est pas dans le maillage 2625 11061
+   Attention l'arete frontiere 3081 n'est pas dans le maillage 11061 2624
+   Attention l'arete frontiere 3082 n'est pas dans le maillage 2525 11065
+   Attention l'arete frontiere 3083 n'est pas dans le maillage 11065 2625
+   Attention l'arete frontiere 3085 n'est pas dans le maillage 11105 2637
+   Attention l'arete frontiere 3086 n'est pas dans le maillage 2638 11107
+   Attention l'arete frontiere 3088 n'est pas dans le maillage 2639 11114
+   Attention l'arete frontiere 3089 n'est pas dans le maillage 11114 2650
+   Attention l'arete frontiere 3091 n'est pas dans le maillage 11116 2641
+   Attention l'arete frontiere 3092 n'est pas dans le maillage 2637 11145
+   Attention l'arete frontiere 3094 n'est pas dans le maillage 2650 11147
+   Attention l'arete frontiere 3096 n'est pas dans le maillage 2654 11159
+   Attention l'arete frontiere 3099 n'est pas dans le maillage 11169 2654
+   Attention l'arete frontiere 3100 n'est pas dans le maillage 2685 11172
+   Attention l'arete frontiere 3102 n'est pas dans le maillage 2498 11175
+   Attention l'arete frontiere 3103 n'est pas dans le maillage 11175 2685
+   Attention l'arete frontiere 3104 n'est pas dans le maillage 2752 11177
+   Attention l'arete frontiere 3106 n'est pas dans le maillage 2756 11180
+   Attention l'arete frontiere 3109 n'est pas dans le maillage 11181 2752
+   Attention l'arete frontiere 3110 n'est pas dans le maillage 2784 11191
+   Attention l'arete frontiere 3113 n'est pas dans le maillage 11195 2784
+   Attention l'arete frontiere 3114 n'est pas dans le maillage 2667 11216
+   Attention l'arete frontiere 3116 n'est pas dans le maillage 2670 11220
+   Attention l'arete frontiere 3117 n'est pas dans le maillage 11220 2669
+   Attention l'arete frontiere 3118 n'est pas dans le maillage 2772 11224
+   Attention l'arete frontiere 3119 n'est pas dans le maillage 11224 2671
+   Attention l'arete frontiere 3120 n'est pas dans le maillage 2671 11225
+   Attention l'arete frontiere 3121 n'est pas dans le maillage 11225 2745
+   Attention l'arete frontiere 3123 n'est pas dans le maillage 11227 2754
+   Attention l'arete frontiere 3124 n'est pas dans le maillage 2676 11235
+   Attention l'arete frontiere 3125 n'est pas dans le maillage 11235 2499
+   Attention l'arete frontiere 3126 n'est pas dans le maillage 2677 11244
+   Attention l'arete frontiere 3127 n'est pas dans le maillage 11244 2676
+   Attention l'arete frontiere 3129 n'est pas dans le maillage 11246 2678
+   Attention l'arete frontiere 3131 n'est pas dans le maillage 11254 2487
+   Attention l'arete frontiere 3132 n'est pas dans le maillage 2641 11263
+   Attention l'arete frontiere 3133 n'est pas dans le maillage 11263 2683
+   Attention l'arete frontiere 3134 n'est pas dans le maillage 2683 11264
+   Attention l'arete frontiere 3135 n'est pas dans le maillage 11264 2638
+   Attention l'arete frontiere 3137 n'est pas dans le maillage 11266 2684
+   Attention l'arete frontiere 3138 n'est pas dans le maillage 2781 11268
+   Attention l'arete frontiere 3139 n'est pas dans le maillage 11268 2707
+   Attention l'arete frontiere 3140 n'est pas dans le maillage 2706 11270
+   Attention l'arete frontiere 3142 n'est pas dans le maillage 2703 11286
+   Attention l'arete frontiere 3143 n'est pas dans le maillage 11286 2692
+   Attention l'arete frontiere 3144 n'est pas dans le maillage 2704 11289
+   Attention l'arete frontiere 3147 n'est pas dans le maillage 11290 2693
+   Attention l'arete frontiere 3148 n'est pas dans le maillage 2694 11295
+   Attention l'arete frontiere 3150 n'est pas dans le maillage 2693 11300
+   Attention l'arete frontiere 3151 n'est pas dans le maillage 11300 2694
+   Attention l'arete frontiere 3153 n'est pas dans le maillage 11307 2698
+   Attention l'arete frontiere 3154 n'est pas dans le maillage 2698 11310
+   Attention l'arete frontiere 3156 n'est pas dans le maillage 2616 11315
+   Attention l'arete frontiere 3159 n'est pas dans le maillage 11329 2702
+   Attention l'arete frontiere 3160 n'est pas dans le maillage 2702 11331
+   Attention l'arete frontiere 3161 n'est pas dans le maillage 11331 2703
+   Attention l'arete frontiere 3162 n'est pas dans le maillage 2692 11334
+   Attention l'arete frontiere 3163 n'est pas dans le maillage 11334 2704
+   Attention l'arete frontiere 3164 n'est pas dans le maillage 2684 11338
+   Attention l'arete frontiere 3166 n'est pas dans le maillage 2707 11346
+   Attention l'arete frontiere 3167 n'est pas dans le maillage 11346 2706
+   Attention l'arete frontiere 3168 n'est pas dans le maillage 2709 11347
+   Attention l'arete frontiere 3169 n'est pas dans le maillage 11347 2273
+   Attention l'arete frontiere 3170 n'est pas dans le maillage 2710 11358
+   Attention l'arete frontiere 3171 n'est pas dans le maillage 11358 2709
+   Attention l'arete frontiere 3172 n'est pas dans le maillage 2718 11387
+   Attention l'arete frontiere 3173 n'est pas dans le maillage 11387 2719
+   Attention l'arete frontiere 3174 n'est pas dans le maillage 2728 11420
+   Attention l'arete frontiere 3176 n'est pas dans le maillage 2263 11424
+   Attention l'arete frontiere 3177 n'est pas dans le maillage 11424 2728
+   Attention l'arete frontiere 3178 n'est pas dans le maillage 2749 11427
+   Attention l'arete frontiere 3180 n'est pas dans le maillage 2732 11434
+   Attention l'arete frontiere 3181 n'est pas dans le maillage 11434 2667
+   Attention l'arete frontiere 3182 n'est pas dans le maillage 2669 11438
+   Attention l'arete frontiere 3183 n'est pas dans le maillage 11438 2780
+   Attention l'arete frontiere 3185 n'est pas dans le maillage 11440 2726
+   Attention l'arete frontiere 3186 n'est pas dans le maillage 2726 11442
+   Attention l'arete frontiere 3187 n'est pas dans le maillage 11442 2732
+   Attention l'arete frontiere 3188 n'est pas dans le maillage 2270 11454
+   Attention l'arete frontiere 3189 n'est pas dans le maillage 11454 2735
+   Attention l'arete frontiere 3191 n'est pas dans le maillage 11456 2658
+   Attention l'arete frontiere 3192 n'est pas dans le maillage 2658 11458
+   Attention l'arete frontiere 3195 n'est pas dans le maillage 11486 2746
+   Attention l'arete frontiere 3196 n'est pas dans le maillage 2745 11494
+   Attention l'arete frontiere 3197 n'est pas dans le maillage 11494 2744
+   Attention l'arete frontiere 3198 n'est pas dans le maillage 2744 11495
+   Attention l'arete frontiere 3199 n'est pas dans le maillage 11495 2670
+   Attention l'arete frontiere 3200 n'est pas dans le maillage 2671 11498
+   Attention l'arete frontiere 3201 n'est pas dans le maillage 11498 2747
+   Attention l'arete frontiere 3202 n'est pas dans le maillage 2746 11499
+   Attention l'arete frontiere 3203 n'est pas dans le maillage 11499 2671
+   Attention l'arete frontiere 3205 n'est pas dans le maillage 11507 2749
+   Attention l'arete frontiere 3206 n'est pas dans le maillage 2747 11512
+   Attention l'arete frontiere 3207 n'est pas dans le maillage 11512 2770
+   Attention l'arete frontiere 3208 n'est pas dans le maillage 2754 11521
+   Attention l'arete frontiere 3209 n'est pas dans le maillage 11521 2689
+   Attention l'arete frontiere 3210 n'est pas dans le maillage 2689 11522
+   Attention l'arete frontiere 3211 n'est pas dans le maillage 11522 2753
+   Attention l'arete frontiere 3212 n'est pas dans le maillage 2753 11525
+   Attention l'arete frontiere 3213 n'est pas dans le maillage 11525 2755
+   Attention l'arete frontiere 3214 n'est pas dans le maillage 2755 11526
+   Attention l'arete frontiere 3215 n'est pas dans le maillage 11526 2756
+   Attention l'arete frontiere 3217 n'est pas dans le maillage 11528 2757
+   Attention l'arete frontiere 3218 n'est pas dans le maillage 2757 11530
+   Attention l'arete frontiere 3219 n'est pas dans le maillage 11530 2220
+   Attention l'arete frontiere 3220 n'est pas dans le maillage 2895 11554
+   Attention l'arete frontiere 3221 n'est pas dans le maillage 11554 2763
+   Attention l'arete frontiere 3222 n'est pas dans le maillage 2770 11576
+   Attention l'arete frontiere 3223 n'est pas dans le maillage 11576 2771
+   Attention l'arete frontiere 3224 n'est pas dans le maillage 2771 11581
+   Attention l'arete frontiere 3225 n'est pas dans le maillage 11581 2772
+   Attention l'arete frontiere 3226 n'est pas dans le maillage 2780 11610
+   Attention l'arete frontiere 3227 n'est pas dans le maillage 11610 2781
+   Attention l'arete frontiere 3228 n'est pas dans le maillage 2785 11619
+   Attention l'arete frontiere 3230 n'est pas dans le maillage 2765 11620
+   Attention l'arete frontiere 3235 n'est pas dans le maillage 11624 2765
+   Attention l'arete frontiere 3236 n'est pas dans le maillage 2226 11685
+   Attention l'arete frontiere 3239 n'est pas dans le maillage 11689 2226
+   Attention l'arete frontiere 3240 n'est pas dans le maillage 2820 11735
+   Attention l'arete frontiere 3242 n'est pas dans le maillage 2821 11739
+   Attention l'arete frontiere 3243 n'est pas dans le maillage 11739 2820
+   Attention l'arete frontiere 3245 n'est pas dans le maillage 11747 2710
+   Attention l'arete frontiere 3246 n'est pas dans le maillage 2244 11749
+   Attention l'arete frontiere 3248 n'est pas dans le maillage 2245 11750
+   Attention l'arete frontiere 3253 n'est pas dans le maillage 11754 2245
+   Attention l'arete frontiere 3254 n'est pas dans le maillage 2826 11755
+   Attention l'arete frontiere 3257 n'est pas dans le maillage 11759 2826
+   Attention l'arete frontiere 3258 n'est pas dans le maillage 2719 11763
+   Attention l'arete frontiere 3259 n'est pas dans le maillage 11763 2821
+   Attention l'arete frontiere 3261 n'est pas dans le maillage 11772 2830
+   Attention l'arete frontiere 3262 n'est pas dans le maillage 2830 11773
+   Attention l'arete frontiere 3263 n'est pas dans le maillage 11773 2831
+   Attention l'arete frontiere 3264 n'est pas dans le maillage 2853 11853
+   Attention l'arete frontiere 3267 n'est pas dans le maillage 11855 2998
+   Attention l'arete frontiere 3268 n'est pas dans le maillage 2856 11860
+   Attention l'arete frontiere 3269 n'est pas dans le maillage 11860 2853
+   Attention l'arete frontiere 3270 n'est pas dans le maillage 2857 11862
+   Attention l'arete frontiere 3272 n'est pas dans le maillage 2858 11867
+   Attention l'arete frontiere 3273 n'est pas dans le maillage 11867 2857
+   Attention l'arete frontiere 3277 n'est pas dans le maillage 11875 2862
+   Attention l'arete frontiere 3278 n'est pas dans le maillage 2863 11877
+   Attention l'arete frontiere 3283 n'est pas dans le maillage 11982 2916
+   Attention l'arete frontiere 3284 n'est pas dans le maillage 2916 11985
+   Attention l'arete frontiere 3286 n'est pas dans le maillage 2961 11999
+   Attention l'arete frontiere 3287 n'est pas dans le maillage 11999 2894
+   Attention l'arete frontiere 3289 n'est pas dans le maillage 12001 2896
+   Attention l'arete frontiere 3290 n'est pas dans le maillage 2896 12003
+   Attention l'arete frontiere 3291 n'est pas dans le maillage 12003 2895
+   Attention l'arete frontiere 3292 n'est pas dans le maillage 2893 12006
+   Attention l'arete frontiere 3294 n'est pas dans le maillage 2917 12009
+   Attention l'arete frontiere 3295 n'est pas dans le maillage 12009 2893
+   Attention l'arete frontiere 3296 n'est pas dans le maillage 2763 12018
+   Attention l'arete frontiere 3299 n'est pas dans le maillage 12026 2902
+   Attention l'arete frontiere 3301 n'est pas dans le maillage 12037 2913
+   Attention l'arete frontiere 3302 n'est pas dans le maillage 2913 12070
+   Attention l'arete frontiere 3307 n'est pas dans le maillage 12073 2915
+   Attention l'arete frontiere 3308 n'est pas dans le maillage 2915 12074
+   Attention l'arete frontiere 3309 n'est pas dans le maillage 12074 2785
+   Attention l'arete frontiere 3311 n'est pas dans le maillage 12078 2918
+   Attention l'arete frontiere 3312 n'est pas dans le maillage 2918 12080
+   Attention l'arete frontiere 3313 n'est pas dans le maillage 12080 2917
+   Attention l'arete frontiere 3314 n'est pas dans le maillage 2902 12097
+   Attention l'arete frontiere 3315 n'est pas dans le maillage 12097 2856
+   Attention l'arete frontiere 3317 n'est pas dans le maillage 12099 2855
+   Attention l'arete frontiere 3320 n'est pas dans le maillage 2855 12103
+   Attention l'arete frontiere 3323 n'est pas dans le maillage 12111 2972
+   Attention l'arete frontiere 3324 n'est pas dans le maillage 2937 12112
+   Attention l'arete frontiere 3327 n'est pas dans le maillage 12149 2943
+   Attention l'arete frontiere 3328 n'est pas dans le maillage 2943 12150
+   Attention l'arete frontiere 3329 n'est pas dans le maillage 12150 2938
+   Attention l'arete frontiere 3330 n'est pas dans le maillage 2938 12153
+   Attention l'arete frontiere 3331 n'est pas dans le maillage 12153 2924
+   Attention l'arete frontiere 3332 n'est pas dans le maillage 2924 12154
+   Attention l'arete frontiere 3333 n'est pas dans le maillage 12154 2937
+   Attention l'arete frontiere 3335 n'est pas dans le maillage 12162 2976
+   Attention l'arete frontiere 3340 n'est pas dans le maillage 2976 12166
+   Attention l'arete frontiere 3342 n'est pas dans le maillage 2946 12174
+   Attention l'arete frontiere 3347 n'est pas dans le maillage 12177 2946
+   Attention l'arete frontiere 3348 n'est pas dans le maillage 2797 12178
+   Attention l'arete frontiere 3351 n'est pas dans le maillage 12182 2797
+   Attention l'arete frontiere 3353 n'est pas dans le maillage 12229 2960
+   Attention l'arete frontiere 3354 n'est pas dans le maillage 2960 12230
+   Attention l'arete frontiere 3355 n'est pas dans le maillage 12230 2961
+   Attention l'arete frontiere 3356 n'est pas dans le maillage 2965 12245
+   Attention l'arete frontiere 3359 n'est pas dans le maillage 12248 2965
+   Attention l'arete frontiere 3360 n'est pas dans le maillage 2967 12253
+   Attention l'arete frontiere 3361 n'est pas dans le maillage 12253 2992
+   Attention l'arete frontiere 3362 n'est pas dans le maillage 2992 12254
+   Attention l'arete frontiere 3363 n'est pas dans le maillage 12254 2966
+   Attention l'arete frontiere 3365 n'est pas dans le maillage 12262 2967
+   Attention l'arete frontiere 3366 n'est pas dans le maillage 2971 12264
+   Attention l'arete frontiere 3368 n'est pas dans le maillage 2972 12270
+   Attention l'arete frontiere 3369 n'est pas dans le maillage 12270 2995
+   Attention l'arete frontiere 3370 n'est pas dans le maillage 2995 12271
+   Attention l'arete frontiere 3371 n'est pas dans le maillage 12271 2971
+   Attention l'arete frontiere 3372 n'est pas dans le maillage 2180 12278
+   Attention l'arete frontiere 3377 n'est pas dans le maillage 12329 3006
+   Attention l'arete frontiere 3378 n'est pas dans le maillage 3006 12332
+   Attention l'arete frontiere 3379 n'est pas dans le maillage 12332 2985
+   Attention l'arete frontiere 3380 n'est pas dans le maillage 2988 12336
+   Attention l'arete frontiere 3382 n'est pas dans le maillage 2202 12339
+   Attention l'arete frontiere 3383 n'est pas dans le maillage 12339 2988
+   Attention l'arete frontiere 3384 n'est pas dans le maillage 2966 12343
+   Attention l'arete frontiere 3387 n'est pas dans le maillage 12344 2194
+   Attention l'arete frontiere 3388 n'est pas dans le maillage 2999 12365
+   Attention l'arete frontiere 3390 n'est pas dans le maillage 2852 12369
+   Attention l'arete frontiere 3391 n'est pas dans le maillage 12369 2999
+   Attention l'arete frontiere 3392 n'est pas dans le maillage 2998 12370
+   Attention l'arete frontiere 3393 n'est pas dans le maillage 12370 2852
+   Attention l'arete frontiere 3394 n'est pas dans le maillage 3002 12379
+   Attention l'arete frontiere 3396 n'est pas dans le maillage 1283 12382
+   Attention l'arete frontiere 3397 n'est pas dans le maillage 12382 3002
+   Attention l'arete frontiere 3398 n'est pas dans le maillage 3005 12384
+   Attention l'arete frontiere 3399 n'est pas dans le maillage 12384 3000
+   Attention l'arete frontiere 3400 n'est pas dans le maillage 3000 12385
+   Attention l'arete frontiere 3401 n'est pas dans le maillage 12385 1293
+   Attention l'arete frontiere 3409 n'est pas dans le maillage 12398 3012
+   Attention l'arete frontiere 3416 n'est pas dans le maillage 1220 12404
+   Attention l'arete frontiere 3422 n'est pas dans le maillage 3017 12410
+   Attention l'arete frontiere 3427 n'est pas dans le maillage 12412 3017
+   Attention l'arete frontiere 3456 n'est pas dans le maillage 3030 12433
+   Attention l'arete frontiere 3458 n'est pas dans le maillage 994 12436
+   Attention l'arete frontiere 3459 n'est pas dans le maillage 12436 3030
+version de medit ffmedit.exe -popen -filebin -addsol 1  Th
+  -- Medit,  Release 3.0a (Nov. 30, 2007)
+     Copyright (c) LJLL, 1999-2007.
+     compiled:  jeu. 21 juin 2018 13:37:18 (with ff++ 3.61).
+ 
+medit with binary version of popen : mesh(es) and solution(s)
+mesh_name= Th
+ Loading data file(s)
+SolAtVertices nv=13254
+End of mesh
+.sol: Dimension 2 (mesh)2 (lecture)1
+  Input seconds:     0.05
+ 
+ medit1()
+ 
+ Building scene(s)
+  Creating scene 1
+   Loading default options
+  Scene seconds:     0.25
+ 
+ Rendering scene(s)
+ 
+ Total running seconds:  536.73
+ Thank you for using Medit.
+times: compile 0.598s, execution 539.227s,  mpirank:0
+ ######## We forget of deleting   32712 Nb pointer,   0Bytes  ,  mpirank 0, memory leak =0
+ CodeAlloc : nb ptr  3131,  size :384720 mpirank: 0
+Ok: Normal End
  try getConsole D:\Study\Projects\XNM\code\XNM3.edp

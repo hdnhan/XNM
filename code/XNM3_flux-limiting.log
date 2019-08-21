@@ -1,0 +1,193 @@
+ 
+D:\Study\Projects\XNM\code>XNM3_flux-limiting.edp
+ 
+D:\Study\Projects\XNM\code>-- FreeFem++ v  3.610001 (date jeu. 12 juil. 2018 15:05:23)
+ Load: lg_fem lg_mesh lg_mesh3 eigenvalue
+    1 : load "medit"(load: loadLibary C:\Program Files (x86)\FreeFem++\\.\medit = 0)
+    2 :
+    3 : string path = "data/";
+    4 : int nthfile = 2;
+    5 : string filemesh = "Th" + nthfile;
+    6 : mesh Th = readmesh(path + filemesh + ".msh");
+    7 :
+    8 : int[int] NoVMesh = [515, 1802, 6718, 6718];
+    9 : real[int, int] hz(NoVMesh[nthfile - 1], 3);
+   10 : ifstream filemeshZ(path + filemesh + "CoZ.txt");
+   11 : filemeshZ >> hz;
+   12 :
+   13 : real[string] mapz;
+   14 : for (int i = 0; i < hz.n; i++){
+   15 :     mapz[string(hz(i, 0)) + " " + string(hz(i, 1))] = hz(i, 2);
+   16 : }
+   17 :
+   18 : func real[int] FillZ(real[int] mat){
+   19 :     for (int i = 0; i < Th.nv; i++){
+   20 :         mat(i) = mapz[string(Th(i).x) + " " + string(Th(i).y)];
+   21 :     }
+   22 :     return mat;
+   23 : }
+   24 :
+   25 : real[int, int] data(503, 4);
+   26 : ifstream filedata(path + "SLMIKE21-3.txt");
+   27 : filedata >> data;
+   28 :
+   29 : func real[int] InterpolationData(real t){
+   30 :     // t: time (unit: second)
+   31 :     real T = 3600;
+   32 :     int n = t /  T;
+   33 :     real delt = t / T - n;
+   34 :     real[int] res(4);
+   35 :     res(0) = data(n + 1, 0) * delt + data(n, 0) * (1 - delt);
+   36 :     res(1) = data(n + 1, 1) * delt + data(n, 1) * (1 - delt);
+   37 :     res(2) = data(n + 1, 2) * delt + data(n, 2) * (1 - delt);
+   38 :     res(3) = data(n + 1, 3) * delt + data(n, 3) * (1 - delt);
+   39 :     return res;
+   40 : }
+   41 :
+   42 : real dt = 1, nu = 2.67 * 1e-4, g = 9.81, rho = 1000, n = 0.025, T = 9999999;
+   43 : real tau =  g * n * n;
+   44 :
+   45 : macro Grad(u) [dx(u), dy(u)]  )   [dx(u), dy(u)] //
+   46 : macro Grad1(ux, uy) [dx(ux), dy(ux), dx(uy), dy(uy)]  )   [dx(ux), dy(ux), dx(uy), dy(uy)] //
+   47 : macro Grad2(ux, uy) [[dx(ux), dy(ux)], [dx(uy), dy(uy)]]  )   [[dx(ux), dy(ux)], [dx(uy), dy(uy)]] //
+   48 : macro Div(ux, uy) (dx(ux) + dy(uy))  )   (dx(ux) + dy(uy)) //
+   49 :
+   50 :
+   51 : fespace Xh(Th, P1);
+   52 : Xh ux, uy, vx, vy, uxold, uyold, phi, eta;
+   53 : Xh h; h[] = -FillZ(h[]);
+   54 : Xh gradh2 = dx(h) * dx(h) + dy(h) * dy(h);
+   55 : real alpha = 0.2;//Th.hmax * sqrt(gradh2[].sum);
+   56 : // Xh Hinitial = 9 + zh;
+   57 : Xh H = 9 + h;
+   58 : Xh s = 0.5 * (sqrt(H^2 + alpha^2) - H);
+   59 : Xh htilde = h + s;
+   60 : Xh Htildeold = H + s;
+   61 : Xh Htilde = Htildeold;
+   62 :
+   63 :
+   64 : for(real t = dt; t <= T; t += dt){
+   65 :     cout << "t: " << t << endl;
+   66 :     cout << htilde[].min << endl;
+   67 :     real[int] BoundData = InterpolationData(t);
+   68 :     real etaUB = BoundData(1);
+   69 :     real etaUB1 = BoundData(2);
+   70 :     real etaUB2 = BoundData(3);
+   71 :
+   72 :     solve TransportEquation(Htilde, phi) =
+   73 :         int2d(Th)(Htilde * phi / dt) - int2d(Th)(Htildeold * phi / dt)
+   74 :         - int2d(Th)(Htilde * [ux, uy]' * Grad(phi)    [dx(phi), dy(phi)] )
+   75 :         + on(2, Htilde = etaUB + htilde);// + on(1, Htilde = 0);// + on(3, H = etaUB1 - zh) + on(4, H = etaUB2 - zh);
+   76 :
+   77 :     H = Htilde - alpha^2 / (4 * Htilde);
+   78 :     real uUB = BoundData(0);
+   79 :     eta = H - h; // check
+   80 :     solve NavierStokes([ux, uy], [vx, vy], solver = sparsesolver) =
+   81 :         int2d(Th)((ux * vx + uy * vy) / dt)
+   82 :         + int2d(Th)(
+   83 :             - convect([uxold, uyold], -dt, uxold) * vx / dt
+   84 :             - convect([uxold, uyold], -dt, uyold) * vy / dt
+   85 :         )
+   86 :         + int2d(Th)(g * Grad(eta)    [dx(eta), dy(eta)] ' * [vx, vy])
+   87 :         - int2d(Th)(nu / Htilde * [vx, vy]' * Grad2(ux, uy)      [[dx(ux), dy(ux)], [dx( uy), dy( uy)]]  * Grad(Htilde)    [dx(Htilde), dy(Htilde)]  - nu * Grad1(ux, uy)
+   [dx(ux), dy(ux), dx( uy), dy( uy)] ' * Grad1(vx, vy)      [dx(vx), dy(vx), dx( vy), dy( vy)] )
+   88 :         + int2d(Th)((tau/Htilde^(4/3) * (uxold * uxold + uyold * uyold)^(0.5)) * (ux * vx + uy * vy))
+   89 :         + on(2, ux = uUB, uy = 0) + on(1, ux = 0, uy = 0);
+   90 :
+   91 :     Htildeold = Htilde;
+   92 :     uxold = ux; uyold = uy;
+   93 : }
+   94 :  sizestack + 1024 =10992  ( 9968 )
+ 
+  --  mesh:  Nb of Triangles =   3214, Nb of Vertices 1802
+t: 1
+-8.99866
+  -- Solve :
+          min -0.804364  max 20.1998
+ kk 2 3 :   -- Solve :
+          min -0.291115  max 0.6147
+          min -0.233343  max 0.210823
+t: 2
+-8.99866
+  -- Solve :
+          min -0.800991  max 20.1998
+ kk 2 3 :   -- Solve :
+          min -0.362963  max 0.6147
+          min -0.456674  max 0.480145
+t: 3
+-8.99866
+  -- Solve :
+          min -0.799863  max 20.1998
+ kk 2 3 :   -- Solve :
+          min -0.431187  max 0.6147
+          min -0.671324  max 0.697208
+t: 4
+-8.99866
+  -- Solve :
+          min -0.800961  max 20.1998
+ kk 2 3 :   -- Solve :
+          min -0.562084  max 0.6147
+          min -0.879369  max 0.932988
+t: 5
+-8.99866
+  -- Solve :
+          min -0.804257  max 20.1998
+ kk 2 3 :   -- Solve :
+          min -0.639996  max 0.753358
+          min -1.08234  max 1.13802
+t: 6
+-8.99866
+  -- Solve :
+          min -0.80974  max 20.1998
+ kk 2 3 :   -- Solve :
+          min -0.717293  max 0.933315
+          min -1.28094  max 1.33742
+t: 7
+-8.99866
+  -- Solve :
+          min -0.817385  max 20.1998
+ kk 2 3 :   -- Solve :
+          min -0.836564  max 1.11604
+          min -1.47556  max 1.52998
+t: 8
+-8.99866
+  -- Solve :
+          min -0.827177  max 20.1998
+ kk 2 3 :   -- Solve :
+          min -0.904425  max 1.30378
+          min -1.66511  max 1.71519
+t: 9
+-8.99866
+  -- Solve :
+          min -0.839073  max 20.1998
+ kk 2 3 :   -- Solve :
+          min -1.15574  max 1.49054
+          min -1.86275  max 1.89709
+t: 10
+-8.99866
+  -- Solve :
+          min -0.853067  max 20.1998
+ kk 2 3 :   -- Solve :
+          min -1.00128  max 1.70811
+          min -2.04787  max 2.05726
+t: 11
+-8.99866
+  -- Solve :
+          min -0.869075  max 20.1998
+ kk 2 3 :   -- Solve :
+          min -1.1973  max 1.91656
+          min -2.22602  max 2.21828
+t: 12
+-8.99866
+  -- Solve :
+          min -0.950733  max 20.1998
+ kk 2 3 :   -- Solve :
+          min -1.40737  max 2.13743
+          min -2.39815  max 2.37089
+t: 13
+-8.99866
+  -- Solve :
+          min -1.12664  max 20.1998
+ kk 2 3 :
+ 
+D:\Study\Projects\XNM\code> try getConsole D:\Study\Projects\XNM\code\XNM3_flux-limiting.edp
